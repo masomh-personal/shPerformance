@@ -1,7 +1,7 @@
 # WoW Performance Addon
 
 <div style="text-align: center;">
-<img src="https://media.forgecdn.net/attachments/946/595/shperformance.png" alt="Addon Image" width="400" style="align: center"/>
+<img src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance.png?raw=true" alt="Addon Image" width="400" style="align: center"/>
 </div>
 
 ## Description
