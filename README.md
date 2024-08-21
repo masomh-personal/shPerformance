@@ -1,12 +1,12 @@
 # WoW Performance Addon
 
-<div style="text-align: center;">
-<img src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance.png?raw=true" alt="Addon Image" width="400" style="align: center"/>
-</div>
-
 ## Description
 
 This addon requires a data broker display addon to be enabled. It allows you to customize the fonts of tooltips, which are handled via a tooltip addon. I highly recommend using TipTac, ElvUI, or similar addons for this purpose.
+
+<div align="center">
+  <img width="400" src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance.png?raw=true">
+</div>
 
 ## Features
 
