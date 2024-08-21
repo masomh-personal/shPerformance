@@ -56,7 +56,6 @@ local GetNumAddOns = C_AddOns.GetNumAddOns;
 gFrame:RegisterEvent("PLAYER_LOGIN")
 gFrame:SetScript("OnEvent", function()
 	for i=1,GetNumAddOns(), 1 do
-		-- local tester = C_AddOns.GetAddOnEnableState(nil, i) and IsAddOnLoaded(i)
 		if IsAddOnLoaded(i) then -->check to see if addon is even enabled/loaded
 			local name = select(1, GetAddOnInfo(i))
 			insert(addons, name)
