@@ -94,7 +94,7 @@ local formatMem = function(mem, x)
 end
 
 -- http://www.wowwiki.com/ColorGradient
-function ColorGradient(perc, ...)
+local ColorGradient = function(perc, ...)
 	if perc >= 1 then
 		return select(select("#", ...) - 2, ...)
 	elseif perc <= 0 then
