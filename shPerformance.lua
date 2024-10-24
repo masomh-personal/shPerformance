@@ -3,7 +3,7 @@ if not LibStub then
 end
 
 --[[----------------CONFIG---------------------
-NOTE: databrokers will always update in real time, this is just configuring the tooltip
+NOTE: data brokers will always update in real time, this is just configuring the tooltip
 
 wantAlphaSorting
 	false: sorts addon list by usage (descending)
@@ -35,19 +35,45 @@ local maxaddons = 40
 local showboth = true
 ------------------END of CONFIG---------------
 -- CONSTANT Thresholds for gradient coloring
-local FPSGradientThreshold = 75
-local MSGradientThreshhold = 500
-local MEMGradientThreshold = 30
+local FPS_GRADIENT_THRESHOLD = 75
+local MS_GRADIENT_THRESHOLD = 500
+local MEM_GRADIENT_THRESHOLD = 30
 
-local prevmem, tipshownMem, tipshownLatency = collectgarbage("count")
-local format, modf, floor, GetNetStats, GetFramerate, collectgarbage, lower =
-	format, math.modf, floor, GetNetStats, GetFramerate, collectgarbage, lower
-local UpdateAddOnMemoryUsage, GetAddOnMemoryUsage, GetAddOnInfo, select, sort =
-	UpdateAddOnMemoryUsage, GetAddOnMemoryUsage, C_AddOns.GetAddOnInfo, select, sort
-local IsAddOnLoaded, ipairs, insert, print = C_AddOns.IsAddOnLoaded, ipairs, table.insert, print
-local GameTooltip, AddLine, AddDoubleLine, abs = GameTooltip, AddLine, AddDoubleLine, math.abs
-local fpsIcon = "Interface\\AddOns\\shPerformance\\media\\fpsicon"
-local msIcon = "Interface\\AddOns\\shPerformance\\media\\msicon"
+-- Addon specific constants
+local FPS_ICON = "Interface\\AddOns\\shPerformance\\media\\fpsicon"
+local MS_ICON = "Interface\\AddOns\\shPerformance\\media\\msicon"
+
+-- Math and string functions
+local format = format
+local floor = math.floor
+local modf = math.modf
+local abs = math.abs
+
+-- Game and system-related functions
+local GetNetStats = GetNetStats
+local GetFramerate = GetFramerate
+local collectgarbage = collectgarbage
+
+-- Add-on management functions
+local UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
+local GetAddOnMemoryUsage = GetAddOnMemoryUsage
+local GetAddOnInfo = C_AddOns.GetAddOnInfo
+local IsAddOnLoaded = C_AddOns.IsAddOnLoaded
+
+-- Utility functions
+local select = select
+local sort = table.sort
+local ipairs = ipairs
+local insert = table.insert
+local print = print
+
+-- Tooltip references
+local GameTooltip = GameTooltip
+
+-- Static values and icons
+local prevmem = collectgarbage("count")
+local tipshownMem
+local tipshownLatency
 
 ---------------------
 --> FUNCTIONS
@@ -93,20 +119,74 @@ local formatMem = function(mem, x)
 	end
 end
 
--- http://www.wowwiki.com/ColorGradient
-local ColorGradient = function(perc, ...)
+-- Function to interpolate between colors based on a percentage
+local function ColorGradient(perc, providedColorSequence)
+	-- Use the provided color sequence or the default (green -> yellow -> red)
+	local colors = providedColorSequence or { 0, 1, 0, 1, 1, 0, 1, 0, 0 }
+	local num = #colors / 3
+
+	-- Clamp the percentage between 0 and 1
 	if perc >= 1 then
-		return select(select("#", ...) - 2, ...)
+		-- Return the last color in the sequence when percentage is at or above 100%
+		local r, g, b = colors[(num - 1) * 3 + 1], colors[(num - 1) * 3 + 2], colors[(num - 1) * 3 + 3]
+		return r, g, b
 	elseif perc <= 0 then
-		return ...
+		-- Return the first color in the sequence when percentage is at or below 0%
+		local r, g, b = colors[1], colors[2], colors[3]
+		return r, g, b
 	end
 
-	local num = select("#", ...) / 3
-	local segment, relperc = modf(perc * (num - 1))
-	local r1, g1, b1, r2, g2, b2 = select((segment * 3) + 1, ...)
+	-- Determine the segment and the relative percentage within that segment
+	local segment = math.floor(perc * (num - 1))
+	local relperc = (perc * (num - 1)) - segment
 
+	-- Get the colors for the current segment
+	local r1, g1, b1 = colors[(segment * 3) + 1], colors[(segment * 3) + 2], colors[(segment * 3) + 3]
+	local r2, g2, b2 = colors[(segment * 3) + 4], colors[(segment * 3) + 5], colors[(segment * 3) + 6]
+
+	-- Interpolate between the two colors
 	return r1 + (r2 - r1) * relperc, g1 + (g2 - g1) * relperc, b1 + (b2 - b1) * relperc
 end
+
+-- Function to create the gradient table with 0.5% intervals
+local function CreateGradientTable(providedColorSequence)
+	local gradientTable = {}
+	local colorSequence = providedColorSequence or nil
+	for i = 0, 200 do
+		local percent = i / 2 -- 0.5% intervals (0.0, 0.5, 1.0, ..., 100.0)
+		local r, g, b = ColorGradient(percent / 100, colorSequence)
+		gradientTable[percent] = { r, g, b }
+	end
+	return gradientTable
+end
+
+-- Create the gradient table when the addon loads
+-- Interpolate between green (0, 1, 0), yellow (1, 1, 0), and red (1, 0, 0)
+local colorSequence = { 0, 1, 0, 1, 1, 0, 1, 0, 0 }
+local GRADIENT_TABLE = CreateGradientTable(colorSequence)
+
+local function GetColorFromGradientTable(proportion, gradientTable)
+	-- Use GRADIENT_TABLE as default if no gradientTable is provided
+	gradientTable = gradientTable or GRADIENT_TABLE
+	-- Convert proportion to a scale of 0 to 100
+	local normalized_value = math.max(0, math.min(proportion * 100, 100))
+	-- Round down the value to the nearest 0.5
+	local roundedValue = math.floor(normalized_value * 2) / 2
+	-- Retrieve and return the RGB values from the gradient table
+	return unpack(gradientTable[roundedValue])
+end
+
+-- Special function for FPS color text
+local function GetFPSColor(fps)
+	-- Invert the proportion for the gradient
+	local proportion = 1 - (fps / FPS_GRADIENT_THRESHOLD)
+	-- Clamp the proportion between 0 and 1
+	proportion = math.max(0, math.min(proportion, 1))
+	-- Use the standard gradient table
+	return GetColorFromGradientTable(proportion, GRADIENT_TABLE)
+end
+
+-->END - GRADIENT COLOR TABLE CREATION
 
 -->tooltip anchor
 local UIParent = UIParent
@@ -126,8 +206,8 @@ end
 local ffps = CreateFrame("frame")
 local flatency = CreateFrame("frame")
 local lib = LibStub:GetLibrary("LibDataBroker-1.1")
-local datafps = lib:NewDataObject("shFps", { type = "data source", text = "Initializing...fps", icon = fpsIcon })
-local datalatency = lib:NewDataObject("shLatency", { type = "data source", text = "Initializing...ms", icon = msIcon })
+local datafps = lib:NewDataObject("shFps", { type = "data source", text = "Initializing...fps", icon = FPS_ICON })
+local datalatency = lib:NewDataObject("shLatency", { type = "data source", text = "Initializing...ms", icon = MS_ICON })
 
 ----------------------
 --> ONUPDATE HANDLERS
@@ -141,19 +221,21 @@ ffps:SetScript("OnUpdate", function(self, t)
 		if tipshownMem and not IsAddOnLoaded("shMem") then
 			datafps.OnEnter(tipshownMem)
 		end
+
 		local fps = GetFramerate()
-		local r, g, b = ColorGradient(fps / FPSGradientThreshold, 1, 0, 0, 1, 1, 0, 0, 1, 0)
+		print("FPS: proportion - " .. fps / FPS_GRADIENT_THRESHOLD)
+		-- Use the inverted proportion for the FPS gradient with the standard gradient table
+		local rf, gf, bf = GetFPSColor(fps)
+		print("rf, gf, bf - " .. rf, gf, bf)
 
 		if showboth then
-			local fps = GetFramerate()
 			local _, _, lh, lw = GetNetStats()
-			local rl, gl, bl = ColorGradient(((lh + lw) / 2) / MSGradientThreshhold, 0, 1, 0, 1, 1, 0, 1, 0, 0)
-			--datafps.text = format("|cff%02x%02x%02x%.0f|r |cffE8D200fps|r |cff%02x%02x%02x%.0f|r |cffE8D200ms|r", r*255, g*255, b*255, fps, rl*255, gl*255, bl*255, lw)
+			local rl, gl, bl = GetColorFromGradientTable(((lh + lw) / 2) / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 			datafps.text = format(
 				"|cff%02x%02x%02x%.0f|r | |cff%02x%02x%02x%.0f|r",
-				r * 255,
-				g * 255,
-				b * 255,
+				rf * 255,
+				gf * 255,
+				bf * 255,
 				fps,
 				rl * 255,
 				gl * 255,
@@ -162,7 +244,7 @@ ffps:SetScript("OnUpdate", function(self, t)
 			)
 		else
 			--datafps.text = format("|cff%02x%02x%02x%.0f|r |cffE8D200fps|r", r*255, g*255, b*255, fps)
-			datafps.text = format("|cff%02x%02x%02x%.0f|r |cffE8D200fps|r", r * 255, g * 255, b * 255, fps)
+			datafps.text = format("|cff%02x%02x%02x%.0f|r |cffE8D200fps|r", rf * 255, gf * 255, bf * 255, fps)
 		end
 
 		elapsedFpsController = UPDATEPERIOD
@@ -178,7 +260,7 @@ flatency:SetScript("OnUpdate", function(self, t)
 			datalatency.OnEnter(tipshownLatency)
 		end
 		local _, _, lh, lw = GetNetStats()
-		local r, g, b = ColorGradient(((lh + lw) / 2) / MSGradientThreshhold, 0, 1, 0, 1, 1, 0, 1, 0, 0)
+		local r, g, b = GetColorFromGradientTable(((lh + lw) / 2) / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 		datalatency.text = format("|cff%02x%02x%02x%.0f/%.0f(w)|r |cffE8D200ms|r", r * 255, g * 255, b * 255, lh, lw)
 		elapsedLatencyController = UPDATEPERIOD + 20 --> blizzard set high update rate on this
 	end
@@ -221,9 +303,9 @@ function datalatency.OnEnter(self)
 	)
 
 	local binz, boutz, l, w = GetNetStats()
-	local rin, gin, bins = ColorGradient(binz / 20, 0, 1, 0, 1, 1, 0, 1, 0, 0)
-	local rout, gout, bout = ColorGradient(boutz / 5, 0, 1, 0, 1, 1, 0, 1, 0, 0)
-	local r, g, b = ColorGradient(((l + w) / 2) / MSGradientThreshhold, 0, 1, 0, 1, 1, 0, 1, 0, 0)
+	local rin, gin, bins = GetColorFromGradientTable(binz / 20, GRADIENT_TABLE)
+	local rout, gout, bout = GetColorFromGradientTable(boutz / 5, GRADIENT_TABLE)
+	local r, g, b = GetColorFromGradientTable(((l + w) / 2) / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 
 	GameTooltip:AddDoubleLine(
 		"|cff42AAFFHOME|r |cffFFFFFFRealm|r |cff0deb11(latency)|r:",
@@ -310,7 +392,7 @@ if not IsAddOnLoaded("shMem") then
 		for i, v in ipairs(addons) do
 			local newname
 			local mem = GetAddOnMemoryUsage(v)
-			local r, g, b = ColorGradient((mem - MEMTHRESH) / 15e3, 0, 1, 0, 1, 1, 0, 1, 0, 0)
+			local r, g, b = GetColorFromGradientTable((mem - MEMTHRESH) / 15e3, GRADIENT_TABLE)
 			addonmem = addonmem + mem
 			if mem > MEMTHRESH and maxaddons > counter then
 				counter = counter + 1
@@ -399,10 +481,8 @@ if not IsAddOnLoaded("shMem") then
 
 		if showboth then
 			local _, _, l, w = GetNetStats()
-			--local rin, gin, bins = ColorGradient(binz/20, 0,1,0, 1,1,0, 1,0,0)
-			--local rout, gout, bout = ColorGradient(boutz/5, 0,1,0, 1,1,0, 1,0,0)
-			local rw, gw, bw = ColorGradient((w / MSGradientThreshhold), 0, 1, 0, 1, 1, 0, 1, 0, 0)
-			local rl, gl, bl = ColorGradient((l / MSGradientThreshhold), 0, 1, 0, 1, 1, 0, 1, 0, 0)
+			local rw, gw, bw = GetColorFromGradientTable(w / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
+			local rl, gl, bl = GetColorFromGradientTable(l / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 
 			GameTooltip:AddDoubleLine(
 				" ",
@@ -427,7 +507,7 @@ if not IsAddOnLoaded("shMem") then
 			GameTooltip:AddDoubleLine(" ", " ")
 		end
 
-		r, g, b = ColorGradient(deltamem / MEMGradientThreshold, 0, 1, 0, 1, 1, 0, 1, 0, 0)
+		local r, g, b = GetColorFromGradientTable(deltamem / MEM_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 		GameTooltip:AddDoubleLine("|cffc3771aGarbage|r churn", format("%.2f kb/sec", deltamem), nil, nil, nil, r, g, b)
 		GameTooltip:AddLine("*Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip*")
 
