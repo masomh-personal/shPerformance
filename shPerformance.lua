@@ -2,46 +2,8 @@ if not LibStub then
 	error("shPerformance requires LibStub")
 end
 
---[[----------------CONFIG---------------------
-NOTE: data brokers will always update in real time, this is just configuring the tooltip
-
-wantAlphaSorting
-	false: sorts addon list by usage (descending)
-	true: sorts addon list in alphabetical order
-
-wantColoring
-	true: colors addon names AND memusage
-	false: just colors memusage and applies them to colors labeled in toc
-
-UPDATEPERIOD
-	number (seconds) that your data broker AND tooltip will be updated IMPORTANT!!!! ANYTHING UNDER 2 will likely effect performance!
-
-MEMTHRESH
-	number (kb) that will limit addon visibility, anything less than this number will NOT show in tooltip
-
-maxaddons
-	max number of addons that will be displayed in tooltip. NOTE: if you are using alphabetical sorting it will NOT display all addons and will
-	cut off based on this number.  Keep default value of 100 if you do not want that to happen
-
-showboth
-	show both the FPS counter and latency counter in your data text
-]]
-
-local wantAlphaSorting = false
-local wantColoring = false
-local UPDATEPERIOD = 2
-local MEMTHRESH = 50
-local maxaddons = 40
-local showboth = true
-------------------END of CONFIG---------------
--- CONSTANT Thresholds for gradient coloring
-local FPS_GRADIENT_THRESHOLD = 75
-local MS_GRADIENT_THRESHOLD = 500
-local MEM_GRADIENT_THRESHOLD = 30
-
--- Addon specific constants
-local FPS_ICON = "Interface\\AddOns\\shPerformance\\media\\fpsicon"
-local MS_ICON = "Interface\\AddOns\\shPerformance\\media\\msicon"
+local _, ns = ...
+local SHP = ns.SHP
 
 -- Math and string functions
 local format = format
@@ -78,24 +40,6 @@ local tipshownLatency
 ---------------------
 --> FUNCTIONS
 ---------------------
-
---INIT
-local addons = {} --main table to manipulate
-local gFrame = CreateFrame("frame")
-local GetNumAddOns = C_AddOns.GetNumAddOns
-gFrame:RegisterEvent("PLAYER_LOGIN")
-gFrame:SetScript("OnEvent", function()
-	for i = 1, GetNumAddOns(), 1 do
-		if IsAddOnLoaded(i) then -->check to see if addon is even enabled/loaded
-			local name = select(1, GetAddOnInfo(i))
-			insert(addons, name)
-		end
-	end
-	sort(addons, function(a, b)
-		return a and b and a:lower() < b:lower()
-	end)
-	collectgarbage("collect")
-end)
 
 -->sort based on usage (will check to see what usage in tooltip updater)
 local usageSort = function(a, b)
@@ -179,7 +123,7 @@ end
 -- Special function for FPS color text
 local function GetFPSColor(fps)
 	-- Invert the proportion for the gradient
-	local proportion = 1 - (fps / FPS_GRADIENT_THRESHOLD)
+	local proportion = 1 - (fps / SHP.config.FPS_GRADIENT_THRESHOLD)
 	-- Clamp the proportion between 0 and 1
 	proportion = math.max(0, math.min(proportion, 1))
 	-- Use the standard gradient table
@@ -206,8 +150,10 @@ end
 local ffps = CreateFrame("frame")
 local flatency = CreateFrame("frame")
 local lib = LibStub:GetLibrary("LibDataBroker-1.1")
-local datafps = lib:NewDataObject("shFps", { type = "data source", text = "Initializing...fps", icon = FPS_ICON })
-local datalatency = lib:NewDataObject("shLatency", { type = "data source", text = "Initializing...ms", icon = MS_ICON })
+local datafps =
+	lib:NewDataObject("shFps", { type = "data source", text = "Initializing...fps", icon = SHP.config.FPS_ICON })
+local datalatency =
+	lib:NewDataObject("shLatency", { type = "data source", text = "Initializing...ms", icon = SHP.config.MS_ICON })
 
 ----------------------
 --> ONUPDATE HANDLERS
@@ -226,9 +172,10 @@ ffps:SetScript("OnUpdate", function(self, t)
 		-- Use the inverted proportion for the FPS gradient with the standard gradient table
 		local rf, gf, bf = GetFPSColor(fps)
 
-		if showboth then
+		if SHP.config.SHOW_BOTH then
 			local _, _, lh, lw = GetNetStats()
-			local rl, gl, bl = GetColorFromGradientTable(((lh + lw) / 2) / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
+			local rl, gl, bl =
+				GetColorFromGradientTable(((lh + lw) / 2) / SHP.config.MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 			datafps.text = format(
 				"|cff%02x%02x%02x%.0f|r | |cff%02x%02x%02x%.0f|r",
 				rf * 255,
@@ -245,7 +192,7 @@ ffps:SetScript("OnUpdate", function(self, t)
 			datafps.text = format("|cff%02x%02x%02x%.0f|r |cffE8D200fps|r", rf * 255, gf * 255, bf * 255, fps)
 		end
 
-		elapsedFpsController = UPDATEPERIOD
+		elapsedFpsController = SHP.config.UPDATE_PERIOD
 	end
 end)
 
@@ -258,9 +205,9 @@ flatency:SetScript("OnUpdate", function(self, t)
 			datalatency.OnEnter(tipshownLatency)
 		end
 		local _, _, lh, lw = GetNetStats()
-		local r, g, b = GetColorFromGradientTable(((lh + lw) / 2) / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
+		local r, g, b = GetColorFromGradientTable(((lh + lw) / 2) / SHP.config.MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 		datalatency.text = format("|cff%02x%02x%02x%.0f/%.0f(w)|r |cffE8D200ms|r", r * 255, g * 255, b * 255, lh, lw)
-		elapsedLatencyController = UPDATEPERIOD + 20 --> blizzard set high update rate on this
+		elapsedLatencyController = SHP.config.UPDATE_PERIOD + 20 --> blizzard set high update rate on this
 	end
 end)
 
@@ -303,7 +250,7 @@ function datalatency.OnEnter(self)
 	local binz, boutz, l, w = GetNetStats()
 	local rin, gin, bins = GetColorFromGradientTable(binz / 20, GRADIENT_TABLE)
 	local rout, gout, bout = GetColorFromGradientTable(boutz / 5, GRADIENT_TABLE)
-	local r, g, b = GetColorFromGradientTable(((l + w) / 2) / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
+	local r, g, b = GetColorFromGradientTable(((l + w) / 2) / SHP.config.MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 
 	GameTooltip:AddDoubleLine(
 		"|cff42AAFFHOME|r |cffFFFFFFRealm|r |cff0deb11(latency)|r:",
@@ -362,7 +309,7 @@ if not IsAddOnLoaded("shMem") then
 		GameTooltip:ClearLines()
 
 		GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Performance|r")
-		if showboth then
+		if SHP.config.SHOW_BOTH then
 			GameTooltip:AddLine("[Memory/Latency]")
 		else
 			GameTooltip:AddLine("[Memory]")
@@ -371,34 +318,34 @@ if not IsAddOnLoaded("shMem") then
 		GameTooltip:AddLine(
 			format(
 				"|cffc3771aDataBroker|r based addon to show your addon memory\nand fps updated every |cff06DDFA%s second(s)|r!\n",
-				UPDATEPERIOD
+				SHP.config.UPDATE_PERIOD
 			)
 		)
 		GameTooltip:AddDoubleLine(" ", " ")
-		GameTooltip:AddDoubleLine("Addon name", format("Memory above (|cff06ddfa%s kb|r)", MEMTHRESH))
+		GameTooltip:AddDoubleLine("Addon name", format("Memory above (|cff06ddfa%s kb|r)", SHP.config.MEM_THRESHOLD))
 		GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
 
 		local counter = 0 -- for numbering (listing) and coloring
 		local addonmem = 0
 		local hidden, hiddenmem, shownmem = 0, 0, 0
 
-		if wantAlphaSorting == false then
-			sort(addons, usageSort) -->sort numerically by usage (descending) if desired
+		if SHP.config.WANT_ALPHA_SORTING == false then
+			sort(SHP.ADDONS_TABLE, usageSort) -->sort numerically by usage (descending) if desired
 		end
 
 		UpdateAddOnMemoryUsage()
-		for i, v in ipairs(addons) do
+		for i, v in ipairs(SHP.ADDONS_TABLE) do
 			local newname
 			local mem = GetAddOnMemoryUsage(v)
-			local r, g, b = GetColorFromGradientTable((mem - MEMTHRESH) / 15e3, GRADIENT_TABLE)
+			local r, g, b = GetColorFromGradientTable((mem - SHP.config.MEM_THRESHOLD) / 15e3, GRADIENT_TABLE)
 			addonmem = addonmem + mem
-			if mem > MEMTHRESH and maxaddons > counter then
+			if mem > SHP.config.MEM_THRESHOLD and SHP.config.MAX_ADDONS > counter then
 				counter = counter + 1
-				hidden = #addons - counter
+				hidden = #SHP.ADDONS_TABLE - counter
 				shownmem = shownmem + mem
 				newname = select(2, GetAddOnInfo(v))
 				local memstr = formatMem(mem)
-				if wantColoring then
+				if SHP.config.WANT_COLORING then
 					if counter < 10 then
 						GameTooltip:AddDoubleLine(
 							format("  |cffDAB024%.0f)|r %s", counter, newname),
@@ -453,7 +400,11 @@ if not IsAddOnLoaded("shMem") then
 		hiddenmem = addonmem - shownmem
 		if hiddenmem > 0 then
 			GameTooltip:AddDoubleLine(
-				format("|cff06DDFA... [%d] hidden addons|r (usage less than %d kb)", hidden, MEMTHRESH),
+				format(
+					"|cff06DDFA... [%d] hidden SHP.ADDONS_TABLE|r (usage less than %d kb)",
+					hidden,
+					SHP.config.MEM_THRESHOLD
+				),
 				" "
 			)
 		end
@@ -477,10 +428,10 @@ if not IsAddOnLoaded("shMem") then
 		)
 		GameTooltip:AddDoubleLine(" ", " ")
 
-		if showboth then
+		if SHP.config.SHOW_BOTH then
 			local _, _, l, w = GetNetStats()
-			local rw, gw, bw = GetColorFromGradientTable(w / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
-			local rl, gl, bl = GetColorFromGradientTable(l / MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
+			local rw, gw, bw = GetColorFromGradientTable(w / SHP.config.MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
+			local rl, gl, bl = GetColorFromGradientTable(l / SHP.config.MS_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 
 			GameTooltip:AddDoubleLine(
 				" ",
@@ -505,7 +456,7 @@ if not IsAddOnLoaded("shMem") then
 			GameTooltip:AddDoubleLine(" ", " ")
 		end
 
-		local r, g, b = GetColorFromGradientTable(deltamem / MEM_GRADIENT_THRESHOLD, GRADIENT_TABLE)
+		local r, g, b = GetColorFromGradientTable(deltamem / SHP.config.MEM_GRADIENT_THRESHOLD, GRADIENT_TABLE)
 		GameTooltip:AddDoubleLine("|cffc3771aGarbage|r churn", format("%.2f kb/sec", deltamem), nil, nil, nil, r, g, b)
 		GameTooltip:AddLine("*Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip*")
 
