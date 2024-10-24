@@ -223,10 +223,8 @@ ffps:SetScript("OnUpdate", function(self, t)
 		end
 
 		local fps = GetFramerate()
-		print("FPS: proportion - " .. fps / FPS_GRADIENT_THRESHOLD)
 		-- Use the inverted proportion for the FPS gradient with the standard gradient table
 		local rf, gf, bf = GetFPSColor(fps)
-		print("rf, gf, bf - " .. rf, gf, bf)
 
 		if showboth then
 			local _, _, lh, lw = GetNetStats()
