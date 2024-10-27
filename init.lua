@@ -13,12 +13,15 @@ SHP.config = {
 	UPDATE_PERIOD_TOOLTIP = 2,
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
 	UPDATE_PERIOD_LATENCY_DATA_TEXT = 1.5,
-	MEM_THRESHOLD = 50,
+	MEM_THRESHOLD = 100,
 	MAX_ADDONS = 40,
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
 	MEM_GRADIENT_THRESHOLD = 40,
+	GRADIENT_COLOR_SEQUENCE_TABLE = { 0, 0.97, 0, 0.97, 0.97, 0, 0.95, 0, 0 }, -- True RGB gradient: green -> yellow -> red
+	-- Starts with green, transitions through yellow, and ends at red (0.95, 0, 0).
+	-- This sequence provides a high-contrast gradient for maximum readability and color intensity.
 	FPS_ICON = "Interface\\AddOns\\shPerformance\\media\\fpsicon",
 	MS_ICON = "Interface\\AddOns\\shPerformance\\media\\msicon",
 }
@@ -112,10 +115,7 @@ SHP.CreateGradientTable = function(providedColorSequence)
 	end
 	return gradientTable
 end
-
--- Create and store the gradient table when the addon loads
-local colorSequence = { 0, 1, 0, 1, 1, 0, 1, 0, 0 }
-SHP.GRADIENT_TABLE = SHP.CreateGradientTable(colorSequence)
+SHP.GRADIENT_TABLE = SHP.CreateGradientTable(SHP.config.GRADIENT_COLOR_SEQUENCE_TABLE)
 
 --[[ 
 	Retrieves the RGB color values from the gradient table based on a proportion.
@@ -141,14 +141,37 @@ SHP.GetFPSColor = function(fps)
 	return SHP.GetColorFromGradientTable(proportion, SHP.GRADIENT_TABLE)
 end
 
--- Tooltip anchor function
--- Determines the anchor point for tooltips based on the frame's position on the screen.
+--[[ 
+	Determines the optimal anchor point for tooltips based on the provided frame's position on the screen.
+	@param frame: The frame for which the tooltip anchor position is calculated.
+	@return: The tooltip anchor point, relative frame, and attachment point based on the screen position
+--]]
 SHP.GetTipAnchor = function(frame)
 	local x, y = frame:GetCenter()
 	if not x or not y then
 		return "TOPLEFT", "BOTTOMLEFT"
 	end
+
+	-- Determine horizontal and vertical halves based on screen location
 	local hhalf = (x > UIParent:GetWidth() * 2 / 3) and "RIGHT" or (x < UIParent:GetWidth() / 3) and "LEFT" or ""
 	local vhalf = (y > UIParent:GetHeight() / 2) and "TOP" or "BOTTOM"
+
+	-- Return calculated tooltip position based on frame's screen section
 	return vhalf .. hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP") .. hhalf
+end
+
+--[[ 
+	Formats a string with a specific RGB color for display in the game tooltip or UI.
+	@param r: Red component of the color (0 to 1)
+	@param g: Green component of the color (0 to 1)
+	@param b: Blue component of the color (0 to 1)
+	@param text: The string of text to be colorized
+	@return: A formatted string wrapped in the specified RGB color, ready for display
+--]]
+function SHP.ColorizeText(r, g, b, text)
+	-- Convert RGB values (0-1) to a hexadecimal color code (00-FF per color channel)
+	local hexColor = SHP.string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+
+	-- Return the formatted string with color applied, using WoW’s color format syntax
+	return SHP.string.format("|cff%s%s|r", hexColor, text)
 end
