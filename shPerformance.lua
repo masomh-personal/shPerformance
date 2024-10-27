@@ -65,7 +65,7 @@ ffps:SetScript("OnUpdate", function(_, t)
 			data_FPS.text = format("|cff%02x%02x%02x%.0f|r |cffE8D200fps|r", rf * 255, gf * 255, bf * 255, fps)
 		end
 
-		elapsedFpsController = SHP.config.UPDATE_PERIOD_DATA_TEXT
+		elapsedFpsController = SHP.config.UPDATE_PERIOD_FPS_DATA_TEXT
 	end
 end)
 
@@ -81,7 +81,7 @@ flatency:SetScript("OnUpdate", function(_, t)
 		local _, _, lh, lw = SHP.GetNetStats()
 		local r, g, b = SHP.GetColorFromGradientTable(((lh + lw) / 2) / SHP.config.MS_GRADIENT_THRESHOLD)
 		data_Latency.text = format("|cff%02x%02x%02x%.0f/%.0f(w)|r |cffE8D200ms|r", r * 255, g * 255, b * 255, lh, lw)
-		elapsedLatencyController = SHP.config.UPDATE_PERIOD_DATA_TEXT
+		elapsedLatencyController = SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT
 	end
 end)
 
@@ -123,22 +123,31 @@ local function OnEnterLatency(self)
 	GameTooltip:AddLine(
 		format(
 			"|cffc3771aDataBroker|r addon shows latency updated every |cff06DDFA%s second(s)|r!\n",
-			SHP.config.UPDATE_PERIOD or 30
+			SHP.config.UPDATE_PERIOD_TOOLTIP
 		)
 	)
 
 	-- Network Stats
-	local binz, boutz, l, w = SHP.GetNetStats()
-	local r, g, b = SHP.GetColorFromGradientTable(((l + w) / 2) / SHP.config.MS_GRADIENT_THRESHOLD)
+	local bandwidthIn, bandwidthOut, latencyHome, latencyWorld = SHP.GetNetStats()
+	local r, g, b = SHP.GetColorFromGradientTable(((latencyHome + latencyWorld) / 2) / SHP.config.MS_GRADIENT_THRESHOLD)
 
 	-- Latency and Bandwidth Details
-	AddColoredDoubleLine("Realm latency:", format("%.0f ms", l), r, g, b)
-	AddColoredDoubleLine("Server latency:", format("%.0f ms", w), r, g, b)
+	GameTooltip:AddLine("")
+	AddColoredDoubleLine("|cffFFFFFFHome latency:|r", format("%.0f ms", latencyHome), r, g, b)
+	AddColoredDoubleLine("|cffFFFFFFWorld latency:|r", format("%.0f ms", latencyWorld), r, g, b)
 	GameTooltip:AddLine(" ")
 
 	-- Bandwidth Information with Color Gradients
-	AddColoredDoubleLine("Incoming bandwidth:", format("%.2f kb/sec", binz), SHP.GetColorFromGradientTable(binz / 20))
-	AddColoredDoubleLine("Outgoing bandwidth:", format("%.2f kb/sec", boutz), SHP.GetColorFromGradientTable(boutz / 5))
+	AddColoredDoubleLine(
+		"Incoming bandwidth:",
+		format("%.2f kb/sec", bandwidthIn),
+		SHP.GetColorFromGradientTable(bandwidthIn / 20)
+	)
+	AddColoredDoubleLine(
+		"Outgoing bandwidth:",
+		format("%.2f kb/sec", bandwidthOut),
+		SHP.GetColorFromGradientTable(bandwidthOut / 5)
+	)
 
 	-- Show Tooltip
 	GameTooltip:Show()
