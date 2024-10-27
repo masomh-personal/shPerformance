@@ -27,13 +27,27 @@ local data_Latency = lib:NewDataObject("shLatency", {
 ----------------------
 --> HELPER FUNCTIONS
 ----------------------
--- Helper function to add a colored double line to the tooltip
-local function AddColoredDoubleLine(label, value, r, g, b)
-	GameTooltip:AddDoubleLine(label, value, r, g, b)
+-- TOOLTIP: helper function to add a colored double line to the tooltip
+local function AddColoredDoubleLine(leftLabel, rightText, r, g, b)
+	GameTooltip:AddDoubleLine(leftLabel, rightText, r, g, b)
+end
+
+-- TOOLTIP: helper function to add a colored single line of text to the tooltip
+local function AddColoredSingleLine(text, r, g, b)
+	GameTooltip:AddLine(text, r, g, b)
+end
+
+-- TOOLTIP: helper function to add a simple line spacer on tooltip
+local function AddToolTipLineSpacer(dashedSpacer)
+	if dashedSpacer then
+		GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
+	else
+		GameTooltip:AddLine(" ")
+	end
 end
 
 ----------------------
---> ONUPDATE HANDLERS for the data text themselves
+--> ONUPDATE HANDLERS for the DATA TEXT itself
 ----------------------
 -- FPS OnUpdate script
 local elapsedFpsController = -10
@@ -73,9 +87,9 @@ flatency:SetScript("OnUpdate", function(_, t)
 
 		local _, _, lh, lw = SHP.GetNetStats()
 		local r, g, b = SHP.GetColorFromGradientTable(((lh + lw) / 2) / SHP.config.MS_GRADIENT_THRESHOLD)
-		local latencyText = SHP.ColorizeText(r, g, b, string.format("%.0f/%.0f(w)", lh, lw))
+		local latencyText = SHP.ColorizeText(r, g, b, string.format("%.0f | %.0f(w)", lh, lw))
 
-		data_Latency.text = SHP.string.format("%s |cffE8D200ms|r", latencyText)
+		data_Latency.text = latencyText --SHP.string.format("%s |cffE8D200ms|r", latencyText)
 		elapsedLatencyController = SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT
 	end
 end)
@@ -104,7 +118,7 @@ data_Latency.OnLeave = function()
 end
 
 ----------------------
---> LATENCY (MS) Data TEXT
+--> LATENCY (MS) TOOLTIP
 ----------------------
 local function OnEnterLatency(self)
 	tipshownLatency = self
@@ -115,34 +129,45 @@ local function OnEnterLatency(self)
 	-- Tooltip Header
 	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Latency|r")
 	GameTooltip:AddLine("[Bandwidth/Latency]")
-	GameTooltip:AddLine(
-		SHP.string.format(
-			"|cffc3771aDataBroker|r addon shows latency updated every |cff06DDFA%s second(s)|r!\n",
-			SHP.config.UPDATE_PERIOD_TOOLTIP
-		)
-	)
+	GameTooltip:AddLine("|cffc3771aDataBroker|r tooltip showing network stats")
+	AddToolTipLineSpacer()
 
-	-- Network Stats
+	-- Network Stats (updated by Blizzard every 30 seconds)
 	local bandwidthIn, bandwidthOut, latencyHome, latencyWorld = SHP.GetNetStats()
-	local r, g, b = SHP.GetColorFromGradientTable(((latencyHome + latencyWorld) / 2) / SHP.config.MS_GRADIENT_THRESHOLD)
 
-	-- Latency and Bandwidth Details
-	GameTooltip:AddLine("")
-	AddColoredDoubleLine("|cffFFFFFFHome latency:|r", SHP.string.format("%.0f ms", latencyHome), r, g, b)
-	AddColoredDoubleLine("|cffFFFFFFWorld latency:|r", SHP.string.format("%.0f ms", latencyWorld), r, g, b)
-	GameTooltip:AddLine(" ")
+	-- Latency Gradient rgb (one for each)
+	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
+	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
 
-	-- Bandwidth Information with Color Gradients
-	AddColoredDoubleLine(
-		"Incoming bandwidth:",
-		SHP.string.format("%.2f kb/sec", bandwidthIn),
-		SHP.GetColorFromGradientTable(bandwidthIn / 20)
-	)
-	AddColoredDoubleLine(
-		"Outgoing bandwidth:",
-		SHP.string.format("%.2f kb/sec", bandwidthOut),
-		SHP.GetColorFromGradientTable(bandwidthOut / 5)
-	)
+	-- Format latency details first
+	local formattedHomeLatency = string.format("%.0f ms", latencyHome)
+	local formattedWorldLatency = string.format("%.0f ms", latencyWorld)
+
+	-- Colorize the formatted strings
+	local colorizedHome = SHP.ColorizeText(rH, gH, bH, formattedHomeLatency)
+	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, formattedWorldLatency)
+
+	-- Use AddColoredDoubleLine with the colorized text
+	AddColoredDoubleLine("|cffFFFFFFHome latency:|r", colorizedHome)
+	AddColoredDoubleLine("|cffFFFFFFWorld latency:|r", colorizedWorld)
+
+	-- Bandwidth Gradient RGB (one for in and one for out)
+	AddToolTipLineSpacer(true)
+	local rIn, gIn, bIn = SHP.GetColorFromGradientTable(bandwidthIn / SHP.config.BANDWIDTH_INCOMING_GRADIENT_THRESHOLD)
+	local rOut, gOut, bOut =
+		SHP.GetColorFromGradientTable(bandwidthOut / SHP.config.BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD)
+
+	-- Format bandwidth details first
+	local formattedBin = string.format("%.2f KB/s", bandwidthIn)
+	local formattedBOut = string.format("%.2f KB/s", bandwidthOut)
+
+	-- Colorize the formatted bandwidth strings
+	local colorizedBin = SHP.ColorizeText(rIn, gIn, bIn, formattedBin)
+	local colorizedBOut = SHP.ColorizeText(rOut, gOut, bOut, formattedBOut)
+
+	-- Use AddColoredDoubleLine with the colorized text
+	AddColoredDoubleLine("|cffFFFFFFIncoming bandwidth:|r", colorizedBin)
+	AddColoredDoubleLine("|cffFFFFFFOutgoing bandwidth:|r", colorizedBOut)
 
 	-- Show Tooltip
 	GameTooltip:Show()
@@ -155,7 +180,7 @@ data_Latency.OnEnter = OnEnterLatency
 data_Latency.OnClick = function() end
 
 ----------------------
---> FPS Data TEXT
+--> FPS Data TOOLTIP
 ----------------------
 if not SHP.IsAddOnLoaded("shMem") then
 	-- Update addon memory usage without overwriting the entire table
@@ -178,20 +203,15 @@ if not SHP.IsAddOnLoaded("shMem") then
 		-- Header information
 		GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Performance|r")
 		GameTooltip:AddLine(SHP.config.SHOW_BOTH and "[Memory/Latency]" or "[Memory]")
-		GameTooltip:AddLine(
-			SHP.string.format(
-				"|cffc3771aDataBroker|r addon shows memory and fps updated every |cff06DDFA%s second(s)|r!\n",
-				SHP.config.UPDATE_PERIOD_TOOLTIP
-			)
-		)
+		GameTooltip:AddLine("|cffc3771aDataBroker|r tooltip showing sorted memory usage")
 
 		-- Column headers
-		GameTooltip:AddLine(" ") -- Adds a blank line for spacing
+		AddToolTipLineSpacer()
 		GameTooltip:AddDoubleLine(
 			"Addon name",
 			SHP.string.format("Memory above (|cff06ddfa%s kb|r)", SHP.config.MEM_THRESHOLD)
 		)
-		GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
+		AddToolTipLineSpacer(true)
 
 		-- Update memory usage data before displaying
 		UpdateAddonMemoryUsage()

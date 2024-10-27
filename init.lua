@@ -12,13 +12,15 @@ SHP.config = {
 	WANT_COLORING = false,
 	UPDATE_PERIOD_TOOLTIP = 2,
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
-	UPDATE_PERIOD_LATENCY_DATA_TEXT = 1.5,
+	UPDATE_PERIOD_LATENCY_DATA_TEXT = 30, -- Static default by blizzard
 	MEM_THRESHOLD = 100,
 	MAX_ADDONS = 40,
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
 	MEM_GRADIENT_THRESHOLD = 40,
+	BANDWIDTH_INCOMING_GRADIENT_THRESHOLD = 20,
+	BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD = 5,
 	GRADIENT_COLOR_SEQUENCE_TABLE = { 0, 0.97, 0, 0.97, 0.97, 0, 0.95, 0, 0 }, -- True RGB gradient: green -> yellow -> red
 	-- Starts with green, transitions through yellow, and ends at red (0.95, 0, 0).
 	-- This sequence provides a high-contrast gradient for maximum readability and color intensity.
