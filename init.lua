@@ -10,7 +10,8 @@ local SHP = ns.SHP
 SHP.config = {
 	WANT_ALPHA_SORTING = false,
 	WANT_COLORING = false,
-	UPDATE_PERIOD = 2,
+	UPDATE_PERIOD_TOOLTIP = 2,
+	UPDATE_PERIOD_DATA_TEXT = 1.5,
 	MEM_THRESHOLD = 50,
 	MAX_ADDONS = 40,
 	SHOW_BOTH = true,
@@ -29,51 +30,18 @@ SHP.UpdateAddOnMemoryUsage, SHP.GetAddOnMemoryUsage, SHP.GetNumAddOns, SHP.GetAd
 	UpdateAddOnMemoryUsage, GetAddOnMemoryUsage, C_AddOns.GetNumAddOns, C_AddOns.GetAddOnInfo, C_AddOns.IsAddOnLoaded
 SHP.GameTooltip = GameTooltip
 
--- Initialize addons table and update counter
+-- Initialize addons table
 SHP.ADDONS_TABLE = {}
-local updateCounter = 0
 
--- Function to create and populate the addons table initially
+-- Function to create and populate the addons table with colorized titles initially
 local function CreateAddonTable()
 	local numAddOns = SHP.GetNumAddOns()
 	for i = 1, numAddOns do
 		if SHP.IsAddOnLoaded(i) then
-			local name = select(1, SHP.GetAddOnInfo(i))
-			SHP.ADDONS_TABLE[name] = 0 -- Initialize memory usage to 0
-		end
-	end
-
-	-- Sort alphabetically if configured
-	if SHP.config.WANT_ALPHA_SORTING then
-		SHP.table.sort(SHP.ADDONS_TABLE, function(a, b)
-			return a:lower() < b:lower()
-		end)
-	end
-
-	-- Run garbage collection after loading the addons
-	SHP.collectgarbage("collect")
-end
-
--- Memory usage sorting function
-local function usageSort(a, b)
-	return (SHP.GetAddOnMemoryUsage(a) or 0) > (SHP.GetAddOnMemoryUsage(b) or 0)
-end
-
--- Function to update addon memory usage, using cache
-local function UpdateMemoryUsage()
-	updateCounter = updateCounter + 1
-
-	-- Only update memory usage every few cycles to reduce load
-	if updateCounter % (SHP.config.UPDATE_PERIOD / 2) == 0 then
-		SHP.UpdateAddOnMemoryUsage()
-
-		for name, _ in pairs(SHP.ADDONS_TABLE) do
-			SHP.ADDONS_TABLE[name] = SHP.GetAddOnMemoryUsage(name) or 0
-		end
-
-		-- Sort by usage if alphabetical sorting is disabled
-		if not SHP.config.WANT_ALPHA_SORTING then
-			table.sort(SHP.ADDONS_TABLE, usageSort)
+			local name, title = SHP.GetAddOnInfo(i)
+			local colorizedTitle = title and (title:find("|cff") and title or "|cffffffff" .. title)
+				or "|cffffffffUnknown Addon"
+			SHP.ADDONS_TABLE[name] = { memory = 0, colorizedTitle = colorizedTitle } -- Store as a table with `memory` and `colorizedTitle`
 		end
 	end
 end
@@ -82,8 +50,7 @@ end
 local gFrame = CreateFrame("Frame")
 gFrame:RegisterEvent("PLAYER_LOGIN")
 gFrame:SetScript("OnEvent", function()
-	CreateAddonTable()
-	C_Timer.NewTicker(SHP.config.UPDATE_PERIOD, UpdateMemoryUsage) -- Periodic updates
+	CreateAddonTable() -- Initialize addons table only once
 end)
 
 --[[ 
