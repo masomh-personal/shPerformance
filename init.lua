@@ -1,109 +1,186 @@
+if not LibStub then
+	error("shPerformance requires LibStub")
+end
+
 local _, ns = ...
 ns.SHP = {}
 local SHP = ns.SHP
 
---[[----------------CONFIG---------------------
-NOTE: data brokers will always update in real time, this is just configuring the tooltip
-
-wantAlphaSorting
-	false: sorts addon list by usage (descending)
-	true: sorts addon list in alphabetical order
-
-wantColoring
-	true: colors addon names AND memusage
-	false: just colors memusage and applies them to colors labeled in toc
-
-UPDATEPERIOD
-	number (seconds) that your data broker AND tooltip will be updated IMPORTANT!!!! ANYTHING UNDER 2 will likely effect performance!
-
-MEMTHRESH
-	number (kb) that will limit addon visibility, anything less than this number will NOT show in tooltip
-
-maxaddons
-	max number of addons that will be displayed in tooltip. NOTE: if you are using alphabetical sorting it will NOT display all addons and will
-	cut off based on this number.  Keep default value of 100 if you do not want that to happen
-
-showboth
-	show both the FPS counter and latency counter in your data text
-]]
-
+--[[----------------CONFIG---------------------]]
 SHP.config = {
-	-- Base config variables (see above comments for details)
 	WANT_ALPHA_SORTING = false,
 	WANT_COLORING = false,
 	UPDATE_PERIOD = 2,
 	MEM_THRESHOLD = 50,
 	MAX_ADDONS = 40,
 	SHOW_BOTH = true,
-
-	-- CONSTANT Thresholds for gradient coloring
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
 	MEM_GRADIENT_THRESHOLD = 40,
-
-	-- Addon specific constants (broker icons)
 	FPS_ICON = "Interface\\AddOns\\shPerformance\\media\\fpsicon",
 	MS_ICON = "Interface\\AddOns\\shPerformance\\media\\msicon",
 }
 
--- Localize commonly used libraries
-local math = math
-local string = string
-local table = table
-
--- Math, String, and Table functions accessed through the local table
-SHP.math = math -- You can access math functions directly (e.g., SHP.math.floor)
-SHP.string = string -- You can use string functions directly (e.g., SHP.string.format)
-SHP.table = table -- You can use table functions directly (e.g., SHP.table.sort)
-
--- Game and system-related functions
-SHP.GetNetStats = GetNetStats
-SHP.GetFramerate = GetFramerate
-SHP.collectgarbage = collectgarbage
-
--- Add-on management functions
-SHP.UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
-SHP.GetAddOnMemoryUsage = GetAddOnMemoryUsage
-SHP.GetNumAddOns = C_AddOns.GetNumAddOns
-SHP.GetAddOnInfo = C_AddOns.GetAddOnInfo
-SHP.IsAddOnLoaded = C_AddOns.IsAddOnLoaded
-
--- Tooltip references
+-- Libraries and commonly used functions
+local math, string, table = math, string, table
+SHP.math, SHP.string, SHP.table = math, string, table
+SHP.GetNetStats, SHP.GetFramerate, SHP.collectgarbage = GetNetStats, GetFramerate, collectgarbage
+SHP.UpdateAddOnMemoryUsage, SHP.GetAddOnMemoryUsage, SHP.GetNumAddOns, SHP.GetAddOnInfo, SHP.IsAddOnLoaded =
+	UpdateAddOnMemoryUsage, GetAddOnMemoryUsage, C_AddOns.GetNumAddOns, C_AddOns.GetAddOnInfo, C_AddOns.IsAddOnLoaded
 SHP.GameTooltip = GameTooltip
 
--- TODO: Static values and icons (really need these?)
--- SHP.prevmem = SHP.collectgarbage("count")
--- SHP.tipshownMem = nil
--- SHP.tipshownLatency = nil
-
--- Main table to store addon names
+-- Initialize addons table and update counter
 SHP.ADDONS_TABLE = {}
+local updateCounter = 0
 
--- Function to create and populate the addons table
+-- Function to create and populate the addons table initially
 local function CreateAddonTable()
-	-- Get the number of addons
 	local numAddOns = SHP.GetNumAddOns()
-
-	-- Iterate through each addon
 	for i = 1, numAddOns do
 		if SHP.IsAddOnLoaded(i) then
 			local name = select(1, SHP.GetAddOnInfo(i))
-			SHP.table.insert(SHP.ADDONS_TABLE, name)
+			SHP.ADDONS_TABLE[name] = 0 -- Initialize memory usage to 0
 		end
 	end
 
-	-- Sort the addons table alphabetically, ignoring case
-	SHP.table.sort(SHP.ADDONS_TABLE, function(a, b)
-		return a:lower() < b:lower()
-	end)
+	-- Sort alphabetically if configured
+	if SHP.config.WANT_ALPHA_SORTING then
+		SHP.table.sort(SHP.ADDONS_TABLE, function(a, b)
+			return a:lower() < b:lower()
+		end)
+	end
 
 	-- Run garbage collection after loading the addons
 	SHP.collectgarbage("collect")
 end
 
--- Event frame to trigger addon initialization
+-- Memory usage sorting function
+local function usageSort(a, b)
+	return (SHP.GetAddOnMemoryUsage(a) or 0) > (SHP.GetAddOnMemoryUsage(b) or 0)
+end
+
+-- Function to update addon memory usage, using cache
+local function UpdateMemoryUsage()
+	updateCounter = updateCounter + 1
+
+	-- Only update memory usage every few cycles to reduce load
+	if updateCounter % (SHP.config.UPDATE_PERIOD / 2) == 0 then
+		SHP.UpdateAddOnMemoryUsage()
+
+		for name, _ in pairs(SHP.ADDONS_TABLE) do
+			SHP.ADDONS_TABLE[name] = SHP.GetAddOnMemoryUsage(name) or 0
+		end
+
+		-- Sort by usage if alphabetical sorting is disabled
+		if not SHP.config.WANT_ALPHA_SORTING then
+			table.sort(SHP.ADDONS_TABLE, usageSort)
+		end
+	end
+end
+
+-- Event frame to initialize addon table on login
 local gFrame = CreateFrame("Frame")
 gFrame:RegisterEvent("PLAYER_LOGIN")
 gFrame:SetScript("OnEvent", function()
 	CreateAddonTable()
+	C_Timer.NewTicker(SHP.config.UPDATE_PERIOD, UpdateMemoryUsage) -- Periodic updates
 end)
+
+--[[ 
+	Formats memory usage with optional color coding.
+	@param mem: Memory value in kilobytes (number).
+	@param useColor: Boolean to determine if the formatted output should be colored.
+	@return: Formatted string with memory value in either "K" or "M" units, colored if specified.
+]]
+SHP.formatMem = function(mem, useColor)
+	local isMB = mem > 1024
+	local unit = isMB and "M" or "K"
+	local formattedMem = isMB and mem / 1e3 or mem
+
+	-- Conditional formatting with pseudo-ternary for optional coloring
+	return useColor and format("%.2f|cffE8D200%s|r", formattedMem, unit) or format("%.2f%s", formattedMem, unit)
+end
+
+--[[ 
+	Interpolates between colors in a sequence based on a percentage.
+	@param perc: Percentage (0 to 1) representing the position in the gradient.
+	@param providedColorSequence: Optional table of RGB values (default is green -> yellow -> red).
+	@return: Interpolated RGB color values.
+]]
+SHP.ColorGradient = function(perc, providedColorSequence)
+	local colors = providedColorSequence or { 0, 1, 0, 1, 1, 0, 1, 0, 0 }
+	local num = #colors / 3
+
+	-- Clamp the percentage
+	if perc >= 1 then
+		local r, g, b = colors[(num - 1) * 3 + 1], colors[(num - 1) * 3 + 2], colors[(num - 1) * 3 + 3]
+		return r, g, b
+	elseif perc <= 0 then
+		local r, g, b = colors[1], colors[2], colors[3]
+		return r, g, b
+	end
+
+	-- Determine the segment and interpolate
+	local segment = math.floor(perc * (num - 1))
+	local relperc = (perc * (num - 1)) - segment
+	local r1, g1, b1 = colors[(segment * 3) + 1], colors[(segment * 3) + 2], colors[(segment * 3) + 3]
+	local r2, g2, b2 = colors[(segment * 3) + 4], colors[(segment * 3) + 5], colors[(segment * 3) + 6]
+
+	return r1 + (r2 - r1) * relperc, g1 + (g2 - g1) * relperc, b1 + (b2 - b1) * relperc
+end
+
+--[[ 
+	Creates a gradient table with color values interpolated at 0.5% intervals.
+	@param providedColorSequence: Optional color sequence for gradient creation.
+	@return: Gradient table with RGB values mapped from 0 to 100 percent.
+]]
+SHP.CreateGradientTable = function(providedColorSequence)
+	local gradientTable = {}
+	local colorSequence = providedColorSequence or nil
+	for i = 0, 200 do
+		local percent = i / 2 -- 0.5% intervals
+		local r, g, b = SHP.ColorGradient(percent / 100, colorSequence)
+		gradientTable[percent] = { r, g, b }
+	end
+	return gradientTable
+end
+
+-- Create and store the gradient table when the addon loads
+local colorSequence = { 0, 1, 0, 1, 1, 0, 1, 0, 0 }
+SHP.GRADIENT_TABLE = SHP.CreateGradientTable(colorSequence)
+
+--[[ 
+	Retrieves the RGB color values from the gradient table based on a proportion.
+	@param proportion: Proportion (0 to 1) to map to a color.
+	@param gradientTable: Optional gradient table (default is SHP.GRADIENT_TABLE).
+	@return: RGB values from the gradient table.
+]]
+SHP.GetColorFromGradientTable = function(proportion, gradientTable)
+	gradientTable = gradientTable or SHP.GRADIENT_TABLE
+	local normalized_value = math.max(0, math.min(proportion * 100, 100))
+	local roundedValue = math.floor(normalized_value * 2) / 2
+	return unpack(gradientTable[roundedValue])
+end
+
+--[[ 
+	Returns the appropriate color for FPS text based on the FPS value.
+	@param fps: Frames per second value.
+	@return: RGB color values corresponding to the FPS level.
+]]
+SHP.GetFPSColor = function(fps)
+	local proportion = 1 - (fps / SHP.config.FPS_GRADIENT_THRESHOLD)
+	proportion = math.max(0, math.min(proportion, 1))
+	return SHP.GetColorFromGradientTable(proportion, SHP.GRADIENT_TABLE)
+end
+
+-- Tooltip anchor function
+-- Determines the anchor point for tooltips based on the frame's position on the screen.
+SHP.GetTipAnchor = function(frame)
+	local x, y = frame:GetCenter()
+	if not x or not y then
+		return "TOPLEFT", "BOTTOMLEFT"
+	end
+	local hhalf = (x > UIParent:GetWidth() * 2 / 3) and "RIGHT" or (x < UIParent:GetWidth() / 3) and "LEFT" or ""
+	local vhalf = (y > UIParent:GetHeight() / 2) and "TOP" or "BOTTOM"
+	return vhalf .. hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP") .. hhalf
+end
