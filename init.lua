@@ -35,34 +35,35 @@ SHP.UpdateAddOnMemoryUsage, SHP.GetAddOnMemoryUsage, SHP.GetNumAddOns, SHP.GetAd
 	UpdateAddOnMemoryUsage, GetAddOnMemoryUsage, C_AddOns.GetNumAddOns, C_AddOns.GetAddOnInfo, C_AddOns.IsAddOnLoaded
 SHP.GameTooltip = GameTooltip
 
--- Initialize `SHP.ADDONS_TABLE` once in your main setup
+-- Initialize `SHP.ADDONS_TABLE` as an array-style table
 SHP.ADDONS_TABLE = {}
 
--- CreateAddonTable only populates SHP.ADDONS_TABLE; it doesn’t recreate it
+-- Function to create `SHP.ADDONS_TABLE` once at player login
 local function CreateAddonTable()
 	local numAddOns = SHP.GetNumAddOns()
 
 	for i = 1, numAddOns do
-		if SHP.IsAddOnLoaded(i) then
-			local name, title = SHP.GetAddOnInfo(i)
-			local colorizedTitle = title and (title:find("|cff") and title or "|cffffffff" .. title)
-				or "|cffffffffUnknown Addon"
+		local name, title, _, loadable, reason = SHP.GetAddOnInfo(i)
 
-			-- Insert addon data into the existing `SHP.ADDONS_TABLE` array
-			SHP.table.insert(SHP.ADDONS_TABLE, {
+		-- Only add addons that are loadable or load on demand
+		if loadable or reason == "DEMAND_LOADED" then
+			table.insert(SHP.ADDONS_TABLE, {
 				name = name,
-				memory = 0, -- Start with 0 memory usage
-				colorizedTitle = colorizedTitle,
+				index = i, -- Store the addon’s index for easy reference later if needed
+				title = title or "Unknown Addon",
+				colorizedTitle = title and (title:find("|cff") and title or "|cffffffff" .. title)
+					or "|cffffffffUnknown Addon",
+				memory = 0, -- Default memory usage, to be updated later
 			})
 		end
 	end
 end
 
--- Event frame to initialize addon table on login
+-- Initialize `SHP.ADDONS_TABLE` once at player login
 local gFrame = CreateFrame("Frame")
 gFrame:RegisterEvent("PLAYER_LOGIN")
 gFrame:SetScript("OnEvent", function()
-	CreateAddonTable() -- Initialize addons table only once
+	CreateAddonTable() -- Populate the addons table only once on login
 end)
 
 --[[ 
@@ -246,5 +247,25 @@ SHP.AddToolTipLineSpacer = function(dashedSpacer)
 		SHP.GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
 	else
 		SHP.GameTooltip:AddLine(" ")
+	end
+end
+
+--[[ 
+    Updates the memory usage for each addon in `SHP.ADDONS_TABLE`.
+    This function refreshes WoW's internal memory usage data, then iterates over `SHP.ADDONS_TABLE`
+    to retrieve and update each addon's current memory usage in KB. This function does not recreate
+    or modify the `SHP.ADDONS_TABLE` structure; it only updates the `memory` field for each addon.
+
+    @return: None. Modifies the `memory` field of each entry in `SHP.ADDONS_TABLE` in place.
+--]]
+SHP.UpdateUserAddonMemoryUsageTable = function()
+	-- Refresh memory usage data for all loaded addons in WoW
+	SHP.UpdateAddOnMemoryUsage() -- WoW API call to refresh memory data
+
+	-- Loop through each addon in `SHP.ADDONS_TABLE` (now an array) and update its memory usage
+	for _, addonData in ipairs(SHP.ADDONS_TABLE) do
+		-- Retrieve memory usage for each addon by its `index`
+		-- `SHP.GetAddOnMemoryUsage(addonData.index)` returns memory in KB; fallback to 0 if unavailable
+		addonData.memory = SHP.GetAddOnMemoryUsage(addonData.index) or 0
 	end
 end
