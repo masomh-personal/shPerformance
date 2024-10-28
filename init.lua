@@ -35,18 +35,25 @@ SHP.UpdateAddOnMemoryUsage, SHP.GetAddOnMemoryUsage, SHP.GetNumAddOns, SHP.GetAd
 	UpdateAddOnMemoryUsage, GetAddOnMemoryUsage, C_AddOns.GetNumAddOns, C_AddOns.GetAddOnInfo, C_AddOns.IsAddOnLoaded
 SHP.GameTooltip = GameTooltip
 
--- Initialize addons table
+-- Initialize `SHP.ADDONS_TABLE` once in your main setup
 SHP.ADDONS_TABLE = {}
 
--- Function to create and populate the addons table with colorized titles initially
+-- CreateAddonTable only populates SHP.ADDONS_TABLE; it doesn’t recreate it
 local function CreateAddonTable()
 	local numAddOns = SHP.GetNumAddOns()
+
 	for i = 1, numAddOns do
 		if SHP.IsAddOnLoaded(i) then
 			local name, title = SHP.GetAddOnInfo(i)
 			local colorizedTitle = title and (title:find("|cff") and title or "|cffffffff" .. title)
 				or "|cffffffffUnknown Addon"
-			SHP.ADDONS_TABLE[name] = { memory = 0, colorizedTitle = colorizedTitle } -- Store as a table with `memory` and `colorizedTitle`
+
+			-- Insert addon data into the existing `SHP.ADDONS_TABLE` array
+			SHP.table.insert(SHP.ADDONS_TABLE, {
+				name = name,
+				memory = 0, -- Start with 0 memory usage
+				colorizedTitle = colorizedTitle,
+			})
 		end
 	end
 end
