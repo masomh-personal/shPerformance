@@ -30,7 +30,6 @@ local data_Latency = lib:NewDataObject("shLatency", {
 local elapsedFpsTimer = -10
 local elapsedLatencyTimer = 0 -- Start at 0 to trigger an initial latency fetch
 local cachedLatencyText = "|cffFFFFFF--|r ms" -- Default latency display text
-
 ffps:SetScript("OnUpdate", function(_, t)
 	-- Update elapsed time
 	elapsedFpsTimer = elapsedFpsTimer - t
@@ -262,7 +261,6 @@ if not SHP.IsAddOnLoaded("shMem") then
 
 		-- Show tooltip
 		GameTooltip:Show()
-		elapsedFpsController = -10
 	end
 	data_FPS.OnEnter = OnEnterFPS
 
