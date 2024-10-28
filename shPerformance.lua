@@ -24,7 +24,7 @@ local data_Latency = lib:NewDataObject("shLatency", {
 })
 
 ----------------------
---> ONUPDATE HANDLERS for the DATA TEXT itself
+--> ONUPDATE HANDLERS for the DATA TEXTS
 ----------------------
 local elapsedFpsTimer = -10
 local elapsedLatencyTimer = 0 -- Start at 0 to trigger an initial latency fetch
@@ -70,9 +70,24 @@ ffps:SetScript("OnUpdate", function(_, t)
 end)
 
 -- Latency OnUpdate script
-local cachedDetailedLatencyText = "Initializing ms..." -- Can be used in any scenario (used in shPerformance tooltip)
+local cachedDetailedLatencyText = "Initializing ms..." -- Used in shPerformance tooltip
 local elapsedLatencyController = -10
+local elapsedFPSController = 1 -- Set to 1 second for FPS updates
+
 flatency:SetScript("OnUpdate", function(_, t)
+	-- Update the FPS controller
+	elapsedFPSController = elapsedFPSController - t
+
+	-- Update FPS text every second
+	if elapsedFPSController < 0 then
+		local fpsText = SHP.GetColorizedFPSText()
+		data_Latency.text = SHP.string.format("%s - %s", fpsText, cachedDetailedLatencyText)
+
+		-- Reset FPS controller to update every second
+		elapsedFPSController = 1
+	end
+
+	-- Update the latency controller
 	elapsedLatencyController = elapsedLatencyController - t
 	if elapsedLatencyController < 0 then
 		if tipshownLatency then
@@ -94,11 +109,10 @@ flatency:SetScript("OnUpdate", function(_, t)
 		local colorizedHome = SHP.ColorizeText(rH, gH, bH, formattedHomeLatency)
 		local colorizedWorld = SHP.ColorizeText(rW, gW, bW, formattedWorldLatency)
 
-		-- Separate color gradients for boht home and world latencies
+		-- Combine latency details for display
 		cachedDetailedLatencyText = SHP.string.format("%s | %s", colorizedHome, colorizedWorld)
-		data_Latency.text = cachedDetailedLatencyText
 
-		-- Update timer
+		-- Reset the latency controller to update every 30 seconds
 		elapsedLatencyController = SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT
 	end
 end)
