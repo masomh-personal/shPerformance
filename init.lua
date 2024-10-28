@@ -13,8 +13,7 @@ SHP.config = {
 	UPDATE_PERIOD_TOOLTIP = 2,
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
 	UPDATE_PERIOD_LATENCY_DATA_TEXT = 30, -- Static default by blizzard
-	MEM_THRESHOLD = 100,
-	MAX_ADDONS = 30,
+	MEM_THRESHOLD = 300, -- in KB (only will show addons that use >= this number)
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
@@ -201,8 +200,11 @@ SHP.AddNetworkStatsToTooltip = function()
 	-- Add colorized latency details to the tooltip
 	local homeHexColor = "42AAFF"
 	local worldHexColor = "DCFF42"
-	GameTooltip:AddDoubleLine(SHP.string.format("|cff%sHOME|r |cffFFFFFFlatency:|r", homeHexColor), colorizedHome)
-	GameTooltip:AddDoubleLine(SHP.string.format("|cff%sWORLD|r |cffFFFFFFlatency:|r", worldHexColor), colorizedWorld)
+	SHP.GameTooltip:AddDoubleLine(SHP.string.format("|cff%sHOME|r |cffFFFFFFlatency:|r", homeHexColor), colorizedHome)
+	SHP.GameTooltip:AddDoubleLine(
+		SHP.string.format("|cff%sWORLD|r |cffFFFFFFlatency:|r", worldHexColor),
+		colorizedWorld
+	)
 end
 
 --[[ 
@@ -214,7 +216,7 @@ end
 	@param b: Blue component of the color (0-1) for the right text.
 --]]
 SHP.AddColoredDoubleLine = function(leftLabel, rightText, r, g, b)
-	GameTooltip:AddDoubleLine(leftLabel, rightText, r, g, b)
+	SHP.GameTooltip:AddDoubleLine(leftLabel, rightText, r, g, b)
 end
 
 --[[ 
@@ -225,7 +227,7 @@ end
 	@param b: Blue component of the color (0-1).
 --]]
 SHP.AddColoredSingleLine = function(text, r, g, b)
-	GameTooltip:AddLine(text, r, g, b)
+	SHP.GameTooltip:AddLine(text, r, g, b)
 end
 
 --[[ 
@@ -234,8 +236,8 @@ end
 --]]
 SHP.AddToolTipLineSpacer = function(dashedSpacer)
 	if dashedSpacer then
-		GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
+		SHP.GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
 	else
-		GameTooltip:AddLine(" ")
+		SHP.GameTooltip:AddLine(" ")
 	end
 end
