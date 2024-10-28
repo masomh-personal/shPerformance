@@ -199,8 +199,8 @@ SHP.AddNetworkStatsToTooltip = function()
 	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, formattedWorldLatency)
 
 	-- Add colorized latency details to the tooltip
-	local homeHexColor = "FFA24D"
-	local worldHexColor = "A566FF"
+	local homeHexColor = "42AAFF"
+	local worldHexColor = "DCFF42"
 	GameTooltip:AddDoubleLine(SHP.string.format("|cff%sHOME|r |cffFFFFFFlatency:|r", homeHexColor), colorizedHome)
 	GameTooltip:AddDoubleLine(SHP.string.format("|cff%sWORLD|r |cffFFFFFFlatency:|r", worldHexColor), colorizedWorld)
 end
