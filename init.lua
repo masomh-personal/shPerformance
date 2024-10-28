@@ -185,6 +185,14 @@ SHP.GetTipAnchor = function(frame)
 	return vhalf .. hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP") .. hhalf
 end
 
+-- Precomputed RGB Lookup for frequent colors (optional; improves heavy usage performance)
+local RGB_Lookup = {
+	green = "00FF00",
+	red = "FF0000",
+	yellow = "FFFF00",
+	cyan = "00FFFF",
+}
+
 --[[ 
     Formats a string with a specific RGB color for display in the game tooltip or UI.
     @param r: Red component of the color (0 to 1)
@@ -193,11 +201,17 @@ end
     @param text: The string of text to be colorized
     @return: A formatted string wrapped in the specified RGB color, ready for display
 --]]
+-- Optimized ColorizeText using RGB_Lookup (if applicable colors are reused frequently)
 SHP.ColorizeText = function(r, g, b, text)
-	-- Convert RGB values (0-1) to a hexadecimal color code (00-FF per color channel)
-	local hexColor = SHP.string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
-
-	-- Return the formatted string with color applied, using WoW’s color format syntax
+	local hexColor
+	if r == 0 and g == 1 and b == 0 then
+		hexColor = RGB_Lookup.green
+	elseif r == 1 and g == 1 and b == 0 then
+		hexColor = RGB_Lookup.yellow
+	-- add other frequent colors if needed
+	else
+		hexColor = SHP.string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+	end
 	return SHP.string.format("|cff%s%s|r", hexColor, text)
 end
 
