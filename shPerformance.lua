@@ -25,28 +25,6 @@ local data_Latency = lib:NewDataObject("shLatency", {
 })
 
 ----------------------
---> HELPER FUNCTIONS
-----------------------
--- TOOLTIP: helper function to add a colored double line to the tooltip
-local function AddColoredDoubleLine(leftLabel, rightText, r, g, b)
-	GameTooltip:AddDoubleLine(leftLabel, rightText, r, g, b)
-end
-
--- TOOLTIP: helper function to add a colored single line of text to the tooltip
-local function AddColoredSingleLine(text, r, g, b)
-	GameTooltip:AddLine(text, r, g, b)
-end
-
--- TOOLTIP: helper function to add a simple line spacer on tooltip
-local function AddToolTipLineSpacer(dashedSpacer)
-	if dashedSpacer then
-		GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
-	else
-		GameTooltip:AddLine(" ")
-	end
-end
-
-----------------------
 --> ONUPDATE HANDLERS for the DATA TEXT itself
 ----------------------
 -- FPS OnUpdate script
@@ -85,11 +63,25 @@ flatency:SetScript("OnUpdate", function(_, t)
 			data_Latency.OnEnter(tipshownLatency)
 		end
 
-		local _, _, lh, lw = SHP.GetNetStats()
-		local r, g, b = SHP.GetColorFromGradientTable(((lh + lw) / 2) / SHP.config.MS_GRADIENT_THRESHOLD)
-		local latencyText = SHP.ColorizeText(r, g, b, string.format("%.0f | %.0f(w)", lh, lw))
+		-- Retrieve network stats from WoW's API or custom function
+		local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
 
-		data_Latency.text = latencyText --SHP.string.format("%s |cffE8D200ms|r", latencyText)
+		-- Calculate RGB gradient colors for latency based on thresholds in the config
+		local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
+		local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
+
+		-- Format latency values to display as integers with "ms" suffix
+		local formattedHomeLatency = string.format("%.0f", latencyHome)
+		local formattedWorldLatency = string.format("%.0f(w)", latencyWorld)
+
+		-- Apply color to formatted latency strings
+		local colorizedHome = SHP.ColorizeText(rH, gH, bH, formattedHomeLatency)
+		local colorizedWorld = SHP.ColorizeText(rW, gW, bW, formattedWorldLatency)
+
+		-- Separate color gradients for boht home and world latencies
+		data_Latency.text = SHP.string.format("%s | %s", colorizedHome, colorizedWorld)
+
+		-- Update timer
 		elapsedLatencyController = SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT
 	end
 end)
@@ -130,29 +122,14 @@ local function OnEnterLatency(self)
 	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Latency|r")
 	GameTooltip:AddLine("[Bandwidth/Latency]")
 	GameTooltip:AddLine("|cffc3771aDataBroker|r tooltip showing network stats")
-	AddToolTipLineSpacer()
+	SHP.AddToolTipLineSpacer()
 
-	-- Network Stats (updated by Blizzard every 30 seconds)
-	local bandwidthIn, bandwidthOut, latencyHome, latencyWorld = SHP.GetNetStats()
-
-	-- Latency Gradient rgb (one for each)
-	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
-	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
-
-	-- Format latency details first
-	local formattedHomeLatency = string.format("%.0f ms", latencyHome)
-	local formattedWorldLatency = string.format("%.0f ms", latencyWorld)
-
-	-- Colorize the formatted strings
-	local colorizedHome = SHP.ColorizeText(rH, gH, bH, formattedHomeLatency)
-	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, formattedWorldLatency)
-
-	-- Use AddColoredDoubleLine with the colorized text
-	AddColoredDoubleLine("|cffFFFFFFHome latency:|r", colorizedHome)
-	AddColoredDoubleLine("|cffFFFFFFWorld latency:|r", colorizedWorld)
+	-- Helper function for latency module
+	local bandwidthIn, bandwidthOut, _, _ = SHP.GetNetStats()
+	SHP.AddNetworkStatsToTooltip()
 
 	-- Bandwidth Gradient RGB (one for in and one for out)
-	AddToolTipLineSpacer(true)
+	SHP.AddToolTipLineSpacer(true)
 	local rIn, gIn, bIn = SHP.GetColorFromGradientTable(bandwidthIn / SHP.config.BANDWIDTH_INCOMING_GRADIENT_THRESHOLD)
 	local rOut, gOut, bOut =
 		SHP.GetColorFromGradientTable(bandwidthOut / SHP.config.BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD)
@@ -166,8 +143,8 @@ local function OnEnterLatency(self)
 	local colorizedBOut = SHP.ColorizeText(rOut, gOut, bOut, formattedBOut)
 
 	-- Use AddColoredDoubleLine with the colorized text
-	AddColoredDoubleLine("|cffFFFFFFIncoming bandwidth:|r", colorizedBin)
-	AddColoredDoubleLine("|cffFFFFFFOutgoing bandwidth:|r", colorizedBOut)
+	SHP.AddColoredDoubleLine("|cff00FFFFIncoming bandwidth:|r", colorizedBin)
+	SHP.AddColoredDoubleLine("|cff00FFFFOutgoing bandwidth:|r", colorizedBOut)
 
 	-- Show Tooltip
 	GameTooltip:Show()
@@ -206,12 +183,12 @@ if not SHP.IsAddOnLoaded("shMem") then
 		GameTooltip:AddLine("|cffc3771aDataBroker|r tooltip showing sorted memory usage")
 
 		-- Column headers
-		AddToolTipLineSpacer()
+		SHP.AddToolTipLineSpacer()
 		GameTooltip:AddDoubleLine(
 			"Addon name",
 			SHP.string.format("Memory above (|cff06ddfa%s kb|r)", SHP.config.MEM_THRESHOLD)
 		)
-		AddToolTipLineSpacer(true)
+		SHP.AddToolTipLineSpacer(true)
 
 		-- Update memory usage data before displaying
 		UpdateAddonMemoryUsage()

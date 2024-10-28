@@ -163,17 +163,77 @@ SHP.GetTipAnchor = function(frame)
 end
 
 --[[ 
-	Formats a string with a specific RGB color for display in the game tooltip or UI.
-	@param r: Red component of the color (0 to 1)
-	@param g: Green component of the color (0 to 1)
-	@param b: Blue component of the color (0 to 1)
-	@param text: The string of text to be colorized
-	@return: A formatted string wrapped in the specified RGB color, ready for display
+    Formats a string with a specific RGB color for display in the game tooltip or UI.
+    @param r: Red component of the color (0 to 1)
+    @param g: Green component of the color (0 to 1)
+    @param b: Blue component of the color (0 to 1)
+    @param text: The string of text to be colorized
+    @return: A formatted string wrapped in the specified RGB color, ready for display
 --]]
-function SHP.ColorizeText(r, g, b, text)
+SHP.ColorizeText = function(r, g, b, text)
 	-- Convert RGB values (0-1) to a hexadecimal color code (00-FF per color channel)
 	local hexColor = SHP.string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
 
 	-- Return the formatted string with color applied, using WoW’s color format syntax
 	return SHP.string.format("|cff%s%s|r", hexColor, text)
+end
+
+--[[ 
+	Adds network latency stats to a specified tooltip with colorized formatting.
+	@param tooltip: The tooltip object to which the network stats will be added.
+--]]
+SHP.AddNetworkStatsToTooltip = function()
+	-- Retrieve network stats from WoW's API or custom function
+	local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
+
+	-- Calculate RGB gradient colors for latency based on thresholds in the config
+	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
+	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
+
+	-- Format latency values to display as integers with "ms" suffix
+	local formattedHomeLatency = string.format("%.0f ms", latencyHome)
+	local formattedWorldLatency = string.format("%.0f ms", latencyWorld)
+
+	-- Apply color to formatted latency strings
+	local colorizedHome = SHP.ColorizeText(rH, gH, bH, formattedHomeLatency)
+	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, formattedWorldLatency)
+
+	-- Add colorized latency details to the tooltip
+	GameTooltip:AddDoubleLine("|cffFFFFFFHOME latency:|r", colorizedHome)
+	GameTooltip:AddDoubleLine("|cffFFFFFFWORLD latency:|r", colorizedWorld)
+end
+
+--[[ 
+	Adds a colored double line to the tooltip.
+	@param leftLabel: The text displayed on the left side.
+	@param rightText: The text displayed on the right side.
+	@param r: Red component of the color (0-1) for the right text.
+	@param g: Green component of the color (0-1) for the right text.
+	@param b: Blue component of the color (0-1) for the right text.
+--]]
+SHP.AddColoredDoubleLine = function(leftLabel, rightText, r, g, b)
+	GameTooltip:AddDoubleLine(leftLabel, rightText, r, g, b)
+end
+
+--[[ 
+	Adds a colored single line of text to the tooltip.
+	@param text: The line of text to be added to the tooltip.
+	@param r: Red component of the color (0-1).
+	@param g: Green component of the color (0-1).
+	@param b: Blue component of the color (0-1).
+--]]
+SHP.AddColoredSingleLine = function(text, r, g, b)
+	GameTooltip:AddLine(text, r, g, b)
+end
+
+--[[ 
+	Adds a line spacer to the tooltip. Optionally adds a dashed line if dashedSpacer is true.
+	@param dashedSpacer: Boolean value; if true, adds a dashed line. Otherwise, adds a blank line.
+--]]
+SHP.AddToolTipLineSpacer = function(dashedSpacer)
+	if dashedSpacer then
+		GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
+	else
+		GameTooltip:AddLine(" ")
+	end
 end
