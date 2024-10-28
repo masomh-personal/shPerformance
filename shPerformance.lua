@@ -27,30 +27,49 @@ local data_Latency = lib:NewDataObject("shLatency", {
 ----------------------
 --> ONUPDATE HANDLERS for the DATA TEXT itself
 ----------------------
--- FPS OnUpdate script
-local elapsedFpsController = -10
+local elapsedFpsTimer = -10
+local elapsedLatencyTimer = 0 -- Start at 0 to trigger an initial latency fetch
+local cachedLatencyText = "|cffFFFFFF--|r ms" -- Default latency display text
+
 ffps:SetScript("OnUpdate", function(_, t)
-	elapsedFpsController = elapsedFpsController - t
-	if elapsedFpsController < 0 then
+	-- Update elapsed time
+	elapsedFpsTimer = elapsedFpsTimer - t
+	elapsedLatencyTimer = elapsedLatencyTimer - t
+
+	-- Check if it’s time to update FPS data based on configured period
+	if elapsedFpsTimer < 0 then
+		-- Show memory tooltip if condition met
 		if tipshownMem and not SHP.IsAddOnLoaded("shMem") then
 			data_FPS.OnEnter(tipshownMem)
 		end
 
+		-- Get current FPS and color it based on threshold
 		local fps = SHP.GetFramerate()
 		local rf, gf, bf = SHP.GetFPSColor(fps)
-		local fpsText = SHP.ColorizeText(rf, gf, bf, string.format("%.0f", fps))
+		local fpsText = SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f", fps))
 
-		if SHP.config.SHOW_BOTH then
+		-- Update latency data only if the latency timer has reached 30 seconds
+		if elapsedLatencyTimer <= 0 then
 			local _, _, lh, lw = SHP.GetNetStats()
-			local rl, gl, bl = SHP.GetColorFromGradientTable(((lh + lw) / 2) / SHP.config.MS_GRADIENT_THRESHOLD)
-			local latencyText = SHP.ColorizeText(rl, gl, bl, string.format("%.0f", lw))
+			local averageLatency = (lh + lw) / 2
+			local rl, gl, bl = SHP.GetColorFromGradientTable(averageLatency / SHP.config.MS_GRADIENT_THRESHOLD)
+			cachedLatencyText = SHP.ColorizeText(rl, gl, bl, SHP.string.format("%.0f", lw))
 
-			data_FPS.text = SHP.string.format("%s | %s", fpsText, latencyText)
+			-- Reset the latency timer to 30 seconds
+			elapsedLatencyTimer = 30
+		end
+
+		-- Check if both FPS and latency should be shown
+		if SHP.config.SHOW_BOTH then
+			-- Display both FPS and cached latency text
+			data_FPS.text = SHP.string.format("%s | %s", fpsText, cachedLatencyText)
 		else
+			-- Display only FPS with “fps” label
 			data_FPS.text = SHP.string.format("%s |cffE8D200fps|r", fpsText)
 		end
 
-		elapsedFpsController = SHP.config.UPDATE_PERIOD_FPS_DATA_TEXT
+		-- Reset the FPS update timer
+		elapsedFpsTimer = SHP.config.UPDATE_PERIOD_FPS_DATA_TEXT
 	end
 end)
 
@@ -71,8 +90,8 @@ flatency:SetScript("OnUpdate", function(_, t)
 		local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
 
 		-- Format latency values to display as integers with "ms" suffix
-		local formattedHomeLatency = string.format("%.0f", latencyHome)
-		local formattedWorldLatency = string.format("%.0f(w)", latencyWorld)
+		local formattedHomeLatency = SHP.string.format("%.0f", latencyHome)
+		local formattedWorldLatency = SHP.string.format("%.0f(w)", latencyWorld)
 
 		-- Apply color to formatted latency strings
 		local colorizedHome = SHP.ColorizeText(rH, gH, bH, formattedHomeLatency)
@@ -135,8 +154,8 @@ local function OnEnterLatency(self)
 		SHP.GetColorFromGradientTable(bandwidthOut / SHP.config.BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD)
 
 	-- Format bandwidth details first
-	local formattedBin = string.format("%.2f KB/s", bandwidthIn)
-	local formattedBOut = string.format("%.2f KB/s", bandwidthOut)
+	local formattedBin = SHP.string.format("%.2f KB/s", bandwidthIn)
+	local formattedBOut = SHP.string.format("%.2f KB/s", bandwidthOut)
 
 	-- Colorize the formatted bandwidth strings
 	local colorizedBin = SHP.ColorizeText(rIn, gIn, bIn, formattedBin)
