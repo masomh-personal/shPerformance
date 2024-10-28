@@ -208,10 +208,14 @@ SHP.ColorizeText = function(r, g, b, text)
 		hexColor = RGB_Lookup.green
 	elseif r == 1 and g == 1 and b == 0 then
 		hexColor = RGB_Lookup.yellow
-	-- add other frequent colors if needed
+	elseif r == 0 and g == 1 and b == 1 then
+		hexColor = RGB_Lookup.cyan
+	elseif r == 1 and g == 0 and b == 0 then
+		hexColor = RGB_Lookup.red
 	else
 		hexColor = SHP.string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
 	end
+
 	return SHP.string.format("|cff%s%s|r", hexColor, text)
 end
 
