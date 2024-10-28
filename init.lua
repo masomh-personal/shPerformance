@@ -27,12 +27,28 @@ SHP.config = {
 	MS_ICON = "Interface\\AddOns\\shPerformance\\media\\msicon",
 }
 
--- Libraries and commonly used functions
-local math, string, table = math, string, table
-SHP.math, SHP.string, SHP.table = math, string, table
-SHP.GetNetStats, SHP.GetFramerate, SHP.collectgarbage = GetNetStats, GetFramerate, collectgarbage
-SHP.UpdateAddOnMemoryUsage, SHP.GetAddOnMemoryUsage, SHP.GetNumAddOns, SHP.GetAddOnInfo, SHP.IsAddOnLoaded =
-	UpdateAddOnMemoryUsage, GetAddOnMemoryUsage, C_AddOns.GetNumAddOns, C_AddOns.GetAddOnInfo, C_AddOns.IsAddOnLoaded
+-- Localized: libraries and commonly used functions
+local math = math
+local string = string
+local table = table
+
+SHP.math = math
+SHP.string = string
+SHP.table = table
+
+SHP.GetFramerate = GetFramerate
+SHP.collectgarbage = collectgarbage
+
+SHP.UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
+SHP.GetAddOnMemoryUsage = GetAddOnMemoryUsage
+SHP.GetNumAddOns = C_AddOns.GetNumAddOns
+SHP.GetAddOnInfo = C_AddOns.GetAddOnInfo
+SHP.IsAddOnLoaded = C_AddOns.IsAddOnLoaded
+
+SHP.GetNetStats = GetNetStats
+SHP.GetCVarBool = C_CVar.GetCVarBool
+SHP.GetNetIpTypes = GetNetIpTypes
+
 SHP.GameTooltip = GameTooltip
 
 -- Initialize `SHP.ADDONS_TABLE` as an array-style table
@@ -193,6 +209,14 @@ SHP.AddNetworkStatsToTooltip = function()
 	-- Retrieve network stats from WoW's API or custom function
 	local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
 
+	local ipTypeHomeText, ipTypeWorldText = "HOME", "WORLD"
+	if not SHP.GetCVarBool("useIPv6") then
+		local ipTypes = { "IPv4", "IPv6" }
+		local ipTypeHome, ipTypeWorld = SHP.GetNetIpTypes()
+		ipTypeHomeText = SHP.string.format("HOME (%s)", ipTypes[ipTypeHome or 0] or UNKNOWN)
+		ipTypeWorldText = SHP.string.format("WORLD (%s)", ipTypes[ipTypeWorld or 0] or UNKNOWN)
+	end
+
 	-- Calculate RGB gradient colors for latency based on thresholds in the config
 	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
 	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
@@ -208,9 +232,12 @@ SHP.AddNetworkStatsToTooltip = function()
 	-- Add colorized latency details to the tooltip
 	local homeHexColor = "42AAFF"
 	local worldHexColor = "DCFF42"
-	SHP.GameTooltip:AddDoubleLine(SHP.string.format("|cff%sHOME|r |cffFFFFFFlatency:|r", homeHexColor), colorizedHome)
 	SHP.GameTooltip:AddDoubleLine(
-		SHP.string.format("|cff%sWORLD|r |cffFFFFFFlatency:|r", worldHexColor),
+		SHP.string.format("|cff%s%s|r |cffFFFFFFlatency:|r", homeHexColor, ipTypeHomeText),
+		colorizedHome
+	)
+	SHP.GameTooltip:AddDoubleLine(
+		SHP.string.format("|cff%s%s|r |cffFFFFFFlatency:|r", worldHexColor, ipTypeWorldText),
 		colorizedWorld
 	)
 end
@@ -268,4 +295,21 @@ SHP.UpdateUserAddonMemoryUsageTable = function()
 		-- `SHP.GetAddOnMemoryUsage(addonData.index)` returns memory in KB; fallback to 0 if unavailable
 		addonData.memory = SHP.GetAddOnMemoryUsage(addonData.index) or 0
 	end
+end
+
+--[[ 
+    Retrieves the current FPS, applies a color gradient based on the FPS value,
+    and returns the colorized FPS as a formatted string.
+
+    @return: A colorized string representing the FPS value.
+--]]
+SHP.GetColorizedFPSText = function()
+	-- Retrieve current FPS and round down to the nearest integer
+	local fps = SHP.math.floor(SHP.GetFramerate())
+
+	-- Determine color based on FPS value
+	local rf, gf, bf = SHP.GetFPSColor(fps)
+
+	-- Format FPS value with color and return the resulting string
+	return SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f", fps))
 end
