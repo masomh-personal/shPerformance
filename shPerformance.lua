@@ -42,9 +42,7 @@ ffps:SetScript("OnUpdate", function(_, t)
 		end
 
 		-- Get current FPS and color it based on threshold
-		local fps = SHP.math.floor(SHP.GetFramerate())
-		local rf, gf, bf = SHP.GetFPSColor(fps)
-		local fpsText = SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f", fps))
+		local fpsText = SHP.GetColorizedFPSText()
 
 		-- Update latency data only if the latency timer has reached 30 seconds
 		if elapsedLatencyTimer <= 0 then
