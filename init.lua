@@ -14,7 +14,7 @@ SHP.config = {
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
 	UPDATE_PERIOD_LATENCY_DATA_TEXT = 30, -- Static default by blizzard
 	MEM_THRESHOLD = 100,
-	MAX_ADDONS = 40,
+	MAX_ADDONS = 30,
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
@@ -199,8 +199,10 @@ SHP.AddNetworkStatsToTooltip = function()
 	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, formattedWorldLatency)
 
 	-- Add colorized latency details to the tooltip
-	GameTooltip:AddDoubleLine("|cffFFFFFFHOME latency:|r", colorizedHome)
-	GameTooltip:AddDoubleLine("|cffFFFFFFWORLD latency:|r", colorizedWorld)
+	local homeHexColor = "FFA24D"
+	local worldHexColor = "A566FF"
+	GameTooltip:AddDoubleLine(SHP.string.format("|cff%sHOME|r |cffFFFFFFlatency:|r", homeHexColor), colorizedHome)
+	GameTooltip:AddDoubleLine(SHP.string.format("|cff%sWORLD|r |cffFFFFFFlatency:|r", worldHexColor), colorizedWorld)
 end
 
 --[[ 
