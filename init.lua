@@ -13,7 +13,7 @@ SHP.config = {
 	UPDATE_PERIOD_TOOLTIP = 2,
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
 	UPDATE_PERIOD_LATENCY_DATA_TEXT = 30, -- Static default by blizzard
-	MEM_THRESHOLD = 300, -- in KB (only will show addons that use >= this number)
+	MEM_THRESHOLD = 100, -- in KB (only will show addons that use >= this number)
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
@@ -225,7 +225,7 @@ end
 --]]
 SHP.AddNetworkStatsToTooltip = function()
 	-- Retrieve network stats from WoW's API or custom function
-	local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
+	local bandwidthIn, bandwidthOut, latencyHome, latencyWorld = SHP.GetNetStats()
 
 	local ipTypeHomeText, ipTypeWorldText = "HOME", "WORLD"
 	if not SHP.GetCVarBool("useIPv6") then
@@ -258,6 +258,9 @@ SHP.AddNetworkStatsToTooltip = function()
 		SHP.string.format("|cff%s%s|r |cffFFFFFFlatency:|r", worldHexColor, ipTypeWorldText),
 		colorizedWorld
 	)
+
+	-- based back to tooltip if needed
+	return bandwidthIn, bandwidthOut
 end
 
 --[[ 

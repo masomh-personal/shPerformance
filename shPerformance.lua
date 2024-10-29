@@ -1,9 +1,8 @@
 local _, ns = ...
 local SHP = ns.SHP
 
--- Tooltip variables
+-- Localize: Tooltip variables
 local GameTooltip = GameTooltip
-local tipshownMem, tipshownLatency
 
 ----------------------
 --> MODULES AND FRAMES
@@ -36,11 +35,6 @@ ffps:SetScript("OnUpdate", function(_, t)
 
 	-- Check if it’s time to update FPS data based on configured period
 	if elapsedFpsTimer < 0 then
-		-- Show memory tooltip if condition met
-		if tipshownMem and not SHP.IsAddOnLoaded("shMem") then
-			data_FPS.OnEnter(tipshownMem)
-		end
-
 		-- Get current FPS and color it based on threshold
 		local fpsText = SHP.GetColorizedFPSText()
 
@@ -52,7 +46,7 @@ ffps:SetScript("OnUpdate", function(_, t)
 			cachedLatencyText = SHP.ColorizeText(rl, gl, bl, SHP.string.format("%.0f", lw))
 
 			-- Reset the latency timer to 30 seconds
-			elapsedLatencyTimer = 30
+			elapsedLatencyTimer = SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT
 		end
 
 		-- Check if both FPS and latency should be shown
@@ -73,27 +67,22 @@ end)
 local cachedDetailedLatencyText = "Initializing ms..." -- Used in shPerformance tooltip
 local elapsedLatencyController = -10
 local elapsedFPSController = 1 -- Set to 1 second for FPS updates
-
 flatency:SetScript("OnUpdate", function(_, t)
 	-- Update the FPS controller
 	elapsedFPSController = elapsedFPSController - t
 
-	-- Update FPS text every second
+	-- Update FPS faster
 	if elapsedFPSController < 0 then
 		local fpsText = SHP.GetColorizedFPSText()
 		data_Latency.text = SHP.string.format("%s - %s", fpsText, cachedDetailedLatencyText)
 
-		-- Reset FPS controller to update every second
-		elapsedFPSController = 1
+		-- Reset FPS controller to update
+		elapsedFPSController = SHP.config.UPDATE_PERIOD_FPS_DATA_TEXT
 	end
 
 	-- Update the latency controller
 	elapsedLatencyController = elapsedLatencyController - t
 	if elapsedLatencyController < 0 then
-		if tipshownLatency then
-			data_Latency.OnEnter(tipshownLatency)
-		end
-
 		-- Retrieve network stats from WoW's API or custom function
 		local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
 
@@ -121,30 +110,25 @@ end)
 -- --> ONLEAVE FUNCTIONS
 -- ----------------------
 -- Consolidated Hide Tooltip function
-local function HideTooltip(tipShown)
+local function HideTooltip()
 	GameTooltip:SetClampedToScreen(true)
+	GameTooltip:ClearLines()
 	GameTooltip:Hide()
-	tipShown = nil -- Ensures the tooltip reference is cleared
 end
 
 -- Updated OnLeave Handlers
-if not SHP.IsAddOnLoaded("shMem") then
-	data_FPS.OnLeave = function()
-		HideTooltip(tipshownMem)
-		tipshownMem = nil -- Clear the reference to prevent re-triggering
-	end
+data_FPS.OnLeave = function()
+	HideTooltip()
 end
 
 data_Latency.OnLeave = function()
-	HideTooltip(tipshownLatency)
-	tipshownLatency = nil -- Clear the reference here as well
+	HideTooltip()
 end
 
 ----------------------
 --> LATENCY (MS) TOOLTIP
 ----------------------
 local function OnEnterLatency(self)
-	tipshownLatency = self
 	GameTooltip:SetOwner(self, "ANCHOR_NONE")
 	GameTooltip:SetPoint(SHP.GetTipAnchor(self))
 	GameTooltip:ClearLines()
@@ -156,8 +140,8 @@ local function OnEnterLatency(self)
 	SHP.AddToolTipLineSpacer()
 
 	-- Helper function for latency module
-	local bandwidthIn, bandwidthOut, _, _ = SHP.GetNetStats()
-	SHP.AddNetworkStatsToTooltip()
+	-- NOTE: bandwidthIn and bandwidthOut based back from adding info to tooltip
+	local bandwidthIn, bandwidthOut = SHP.AddNetworkStatsToTooltip()
 
 	-- Bandwidth Gradient RGB (one for in and one for out)
 	SHP.AddToolTipLineSpacer(true)
@@ -179,7 +163,6 @@ local function OnEnterLatency(self)
 
 	-- Show Tooltip
 	GameTooltip:Show()
-	elapsedLatencyController = -10
 end
 
 -- On Enter (MS)
@@ -199,8 +182,6 @@ data_Latency.OnClick = function() end
     @return: None. Modifies the tooltip display in place.
 --]]
 local function OnEnterFPS(self)
-	-- Set the anchor for the tooltip and clear any existing lines
-	tipshownMem = self
 	GameTooltip:ClearLines()
 	GameTooltip:SetOwner(self, "ANCHOR_NONE")
 	GameTooltip:SetPoint(SHP.GetTipAnchor(self))
@@ -285,14 +266,13 @@ local function OnEnterFPS(self)
 	-- Display hint for forced garbage collection
 	SHP.AddToolTipLineSpacer()
 	GameTooltip:AddLine("→ *Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip*")
+
+	-- Finally, show the tooltip
 	GameTooltip:Show()
 end
 data_FPS.OnEnter = OnEnterFPS
 
--- OnClickFPS Function
 local function OnClickFPS()
-	-- Show updated tooltip on click and perform garbage collection
-	data_FPS.OnEnter(tipshownMem)
 	local preCollect = SHP.collectgarbage("count")
 	SHP.collectgarbage("collect")
 	local deltaMemCollected = preCollect - SHP.collectgarbage("count")
