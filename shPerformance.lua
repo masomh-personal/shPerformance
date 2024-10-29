@@ -46,7 +46,7 @@ local function getFormattedMemoryData()
 		local addonMemory = addon.memory
 		if addonMemory > SHP.config.MEM_THRESHOLD then
 			local r, g, b = SHP.GetColorFromGradientTable((addonMemory - SHP.config.MEM_THRESHOLD) / 15e3)
-			local memStr = SHP.ColorizeText(r, g, b, SHP.formatMem(addonMemory))
+			local memStr = SHP.ColorizeText(r, g, b, SHP.formatMemString(addonMemory))
 			SHP.table.insert(formattedData, { addon.colorizedTitle, memStr })
 		end
 		totalMemory = totalMemory + addonMemory
@@ -66,7 +66,6 @@ local function updateTooltipContent()
 	GameTooltip:ClearLines()
 	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Performance|r")
 	GameTooltip:AddLine(SHP.config.SHOW_BOTH and "[Memory/Latency]" or "[Memory]")
-	GameTooltip:AddLine("|cffc3771aDATABROKER|r tooltip showing sorted memory usage")
 	SHP.AddToolTipLineSpacer()
 
 	-- Use helper function to add formatted memory data
@@ -81,7 +80,7 @@ local function updateTooltipContent()
 	SHP.AddToolTipLineSpacer()
 	GameTooltip:AddDoubleLine(
 		" ",
-		SHP.string.format("|cffC3771ATOTAL ADDON|r memory usage → |cff06ddfa%s|r", SHP.formatMem(totalMemory))
+		SHP.string.format("|cffC3771ATOTAL ADDON|r memory usage → |cff06ddfa%s|r", SHP.formatMemString(totalMemory))
 	)
 
 	-- Display hint for garbage collection
@@ -137,7 +136,7 @@ local function OnClickFPS()
 	print(
 		SHP.string.format(
 			"|cff0DEB11shPerformance|r - Garbage Collected: |cff06ddfa%s|r",
-			SHP.formatMem(deltaMemCollected, true)
+			SHP.formatMemString(deltaMemCollected, true)
 		)
 	)
 end

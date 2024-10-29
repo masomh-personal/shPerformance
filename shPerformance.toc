@@ -9,5 +9,6 @@ lib/LibStub.lua
 lib/CallbackHandler-1.0.lua
 lib/LibDataBroker-1.1.lua
 init.lua
+utils.lua
 shLatency.lua
 shPerformance.lua
