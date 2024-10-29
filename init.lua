@@ -5,6 +5,7 @@ end
 local _, ns = ...
 ns.SHP = {}
 local SHP = ns.SHP
+SHP.LibStub = LibStub:GetLibrary("LibDataBroker-1.1")
 
 --[[----------------CONFIG---------------------]]
 SHP.config = {
@@ -220,50 +221,6 @@ SHP.ColorizeText = function(r, g, b, text)
 end
 
 --[[ 
-	Adds network latency stats to a specified tooltip with colorized formatting.
-	@param tooltip: The tooltip object to which the network stats will be added.
---]]
-SHP.AddNetworkStatsToTooltip = function()
-	-- Retrieve network stats from WoW's API or custom function
-	local bandwidthIn, bandwidthOut, latencyHome, latencyWorld = SHP.GetNetStats()
-
-	local ipTypeHomeText, ipTypeWorldText = "HOME", "WORLD"
-	if not SHP.GetCVarBool("useIPv6") then
-		local ipTypes = { "IPv4", "IPv6" }
-		local ipTypeHome, ipTypeWorld = SHP.GetNetIpTypes()
-		ipTypeHomeText = SHP.string.format("HOME (%s)", ipTypes[ipTypeHome or 0] or UNKNOWN)
-		ipTypeWorldText = SHP.string.format("WORLD (%s)", ipTypes[ipTypeWorld or 0] or UNKNOWN)
-	end
-
-	-- Calculate RGB gradient colors for latency based on thresholds in the config
-	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
-	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
-
-	-- Format latency values to display as integers with "ms" suffix
-	local formattedHomeLatency = string.format("%.0f ms", latencyHome)
-	local formattedWorldLatency = string.format("%.0f ms", latencyWorld)
-
-	-- Apply color to formatted latency strings
-	local colorizedHome = SHP.ColorizeText(rH, gH, bH, formattedHomeLatency)
-	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, formattedWorldLatency)
-
-	-- Add colorized latency details to the tooltip
-	local homeHexColor = "42AAFF"
-	local worldHexColor = "DCFF42"
-	SHP.GameTooltip:AddDoubleLine(
-		SHP.string.format("|cff%s%s|r |cffFFFFFFlatency:|r", homeHexColor, ipTypeHomeText),
-		colorizedHome
-	)
-	SHP.GameTooltip:AddDoubleLine(
-		SHP.string.format("|cff%s%s|r |cffFFFFFFlatency:|r", worldHexColor, ipTypeWorldText),
-		colorizedWorld
-	)
-
-	-- based back to tooltip if needed
-	return bandwidthIn, bandwidthOut
-end
-
---[[ 
 	Adds a colored double line to the tooltip.
 	@param leftLabel: The text displayed on the left side.
 	@param rightText: The text displayed on the right side.
@@ -333,4 +290,26 @@ SHP.GetColorizedFPSText = function()
 
 	-- Format FPS value with color and return the resulting string
 	return SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f", fps))
+end
+
+--[[ 
+    Hides the GameTooltip and ensures it is cleared and clamped to the screen.
+
+    This function is used to safely hide the GameTooltip when the mouse 
+    leaves a data display element or tooltip anchor. It provides three actions:
+    - Clamps the tooltip to the screen, ensuring it stays within visible bounds.
+    - Clears any lines currently displayed in the tooltip, preventing residual 
+      content from previous displays.
+    - Hides the tooltip from the UI.
+
+    Usage:
+    Call `SHP.HideTooltip()` in any `OnLeave` handler or context where 
+    the tooltip needs to be safely dismissed and reset.
+
+    @return: None. This function performs actions directly on the GameTooltip object.
+]]
+SHP.HideTooltip = function()
+	GameTooltip:SetClampedToScreen(true)
+	GameTooltip:ClearLines()
+	GameTooltip:Hide()
 end

@@ -9,4 +9,4 @@ lib/LibStub.lua
 lib/CallbackHandler-1.0.lua
 lib/LibDataBroker-1.1.lua
 init.lua
-shPerformance.lua
+shLatency.lua

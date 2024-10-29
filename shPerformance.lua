@@ -5,10 +5,15 @@ local SHP = ns.SHP
 local GameTooltip = GameTooltip
 
 ----------------------
---> MODULES AND FRAMES
+--> Modules, frames, uppdate controllers
 ----------------------
 local ffps = CreateFrame("frame")
+local elapsedFpsController = 0
+
 local flatency = CreateFrame("frame")
+local elapsedLatencyController = 0
+local cachedDetailedLatencyText = "Initializing ms..."
+
 local lib = LibStub:GetLibrary("LibDataBroker-1.1")
 
 local data_FPS = lib:NewDataObject("shFps", {
@@ -23,152 +28,98 @@ local data_Latency = lib:NewDataObject("shLatency", {
 })
 
 ----------------------
---> ONUPDATE HANDLERS for the DATA TEXTS
+--> shLatency Module
 ----------------------
-local elapsedFpsTimer = -10
-local elapsedLatencyTimer = 0 -- Start at 0 to trigger an initial latency fetch
-local cachedLatencyText = "|cffFFFFFF--|r ms" -- Default latency display text
-ffps:SetScript("OnUpdate", function(_, t)
-	-- Update elapsed time
-	elapsedFpsTimer = elapsedFpsTimer - t
-	elapsedLatencyTimer = elapsedLatencyTimer - t
+-- Helper function to get formatted latency and bandwidth data
+local function getFormattedLatencyAndBandwidth()
+	local bandwidthIn, bandwidthOut, latencyHome, latencyWorld = SHP.GetNetStats()
 
-	-- Check if it’s time to update FPS data based on configured period
-	if elapsedFpsTimer < 0 then
-		-- Get current FPS and color it based on threshold
-		local fpsText = SHP.GetColorizedFPSText()
+	-- Format latency with colors
+	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
+	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
+	local colorizedHome = SHP.ColorizeText(rH, gH, bH, SHP.string.format("%.0f ms", latencyHome))
+	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, SHP.string.format("%.0f(w) ms", latencyWorld))
 
-		-- Update latency data only if the latency timer has reached 30 seconds
-		if elapsedLatencyTimer <= 0 then
-			local _, _, lh, lw = SHP.GetNetStats()
-			local averageLatency = (lh + lw) / 2
-			local rl, gl, bl = SHP.GetColorFromGradientTable(averageLatency / SHP.config.MS_GRADIENT_THRESHOLD)
-			cachedLatencyText = SHP.ColorizeText(rl, gl, bl, SHP.string.format("%.0f", lw))
+	-- Format bandwidth with colors
+	local rIn, gIn, bIn = SHP.GetColorFromGradientTable(bandwidthIn / SHP.config.BANDWIDTH_INCOMING_GRADIENT_THRESHOLD)
+	local rOut, gOut, bOut =
+		SHP.GetColorFromGradientTable(bandwidthOut / SHP.config.BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD)
+	local colorizedBin = SHP.ColorizeText(rIn, gIn, bIn, SHP.string.format("%.2f KB/s", bandwidthIn))
+	local colorizedBOut = SHP.ColorizeText(rOut, gOut, bOut, SHP.string.format("%.2f KB/s", bandwidthOut))
 
-			-- Reset the latency timer to 30 seconds
-			elapsedLatencyTimer = SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT
-		end
+	return colorizedHome, colorizedWorld, colorizedBin, colorizedBOut
+end
 
-		-- Check if both FPS and latency should be shown
-		if SHP.config.SHOW_BOTH then
-			-- Display both FPS and cached latency text
-			data_FPS.text = SHP.string.format("%s | %s", fpsText, cachedLatencyText)
-		else
-			-- Display only FPS with “fps” label
-			data_FPS.text = SHP.string.format("%s |cffE8D200fps|r", fpsText)
-		end
+-- Helper function to update data text
+local function updateDataText()
+	local colorizedHome, colorizedWorld = getFormattedLatencyAndBandwidth()
 
-		-- Reset the FPS update timer
-		elapsedFpsTimer = SHP.config.UPDATE_PERIOD_FPS_DATA_TEXT
-	end
-end)
+	-- Combine latency details for display
+	cachedDetailedLatencyText = SHP.string.format("%s | %s", colorizedHome, colorizedWorld)
 
--- Latency OnUpdate script
-local cachedDetailedLatencyText = "Initializing ms..." -- Used in shPerformance tooltip
-local elapsedLatencyController = -10
-local elapsedFPSController = 1 -- Set to 1 second for FPS updates
-flatency:SetScript("OnUpdate", function(_, t)
-	-- Update the FPS controller
-	elapsedFPSController = elapsedFPSController - t
+	data_Latency.text = cachedDetailedLatencyText
+end
 
-	-- Update FPS faster
-	if elapsedFPSController < 0 then
-		local fpsText = SHP.GetColorizedFPSText()
-		data_Latency.text = SHP.string.format("%s - %s", fpsText, cachedDetailedLatencyText)
-
-		-- Reset FPS controller to update
-		elapsedFPSController = SHP.config.UPDATE_PERIOD_FPS_DATA_TEXT
-	end
-
-	-- Update the latency controller
-	elapsedLatencyController = elapsedLatencyController - t
-	if elapsedLatencyController < 0 then
-		-- Retrieve network stats from WoW's API or custom function
-		local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
-
-		-- Calculate RGB gradient colors for latency based on thresholds in the config
-		local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
-		local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
-
-		-- Format latency values to display as integers with "ms" suffix
-		local formattedHomeLatency = SHP.string.format("%.0f", latencyHome)
-		local formattedWorldLatency = SHP.string.format("%.0f(w)", latencyWorld)
-
-		-- Apply color to formatted latency strings
-		local colorizedHome = SHP.ColorizeText(rH, gH, bH, formattedHomeLatency)
-		local colorizedWorld = SHP.ColorizeText(rW, gW, bW, formattedWorldLatency)
-
-		-- Combine latency details for display
-		cachedDetailedLatencyText = SHP.string.format("%s | %s", colorizedHome, colorizedWorld)
-
-		-- Reset the latency controller to update every 30 seconds
-		elapsedLatencyController = SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT
-	end
-end)
-
--- ----------------------
--- --> ONLEAVE FUNCTIONS
--- ----------------------
--- Consolidated Hide Tooltip function
-local function HideTooltip()
-	GameTooltip:SetClampedToScreen(true)
+-- Helper function to update tooltip content
+local function updateTooltipContent()
 	GameTooltip:ClearLines()
-	GameTooltip:Hide()
-end
-
--- Updated OnLeave Handlers
-data_FPS.OnLeave = function()
-	HideTooltip()
-end
-
-data_Latency.OnLeave = function()
-	HideTooltip()
-end
-
-----------------------
---> LATENCY (MS) TOOLTIP
-----------------------
-local function OnEnterLatency(self)
-	GameTooltip:SetOwner(self, "ANCHOR_NONE")
-	GameTooltip:SetPoint(SHP.GetTipAnchor(self))
-	GameTooltip:ClearLines()
-
-	-- Tooltip Header
 	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Latency|r")
 	GameTooltip:AddLine("[Bandwidth/Latency]")
 	GameTooltip:AddLine("|cffc3771aDATABROKER|r tooltip showing network stats")
 	SHP.AddToolTipLineSpacer()
 
-	-- Helper function for latency module
-	-- NOTE: bandwidthIn and bandwidthOut based back from adding info to tooltip
-	local bandwidthIn, bandwidthOut = SHP.AddNetworkStatsToTooltip()
+	-- Use formatted data from the helper function
+	local colorizedHome, colorizedWorld, colorizedBin, colorizedBOut = getFormattedLatencyAndBandwidth()
 
-	-- Bandwidth Gradient RGB (one for in and one for out)
-	SHP.AddToolTipLineSpacer(true)
-	local rIn, gIn, bIn = SHP.GetColorFromGradientTable(bandwidthIn / SHP.config.BANDWIDTH_INCOMING_GRADIENT_THRESHOLD)
-	local rOut, gOut, bOut =
-		SHP.GetColorFromGradientTable(bandwidthOut / SHP.config.BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD)
-
-	-- Format bandwidth details first
-	local formattedBin = SHP.string.format("%.2f KB/s", bandwidthIn)
-	local formattedBOut = SHP.string.format("%.2f KB/s", bandwidthOut)
-
-	-- Colorize the formatted bandwidth strings
-	local colorizedBin = SHP.ColorizeText(rIn, gIn, bIn, formattedBin)
-	local colorizedBOut = SHP.ColorizeText(rOut, gOut, bOut, formattedBOut)
-
-	-- Use AddColoredDoubleLine with the colorized text
+	-- Add latency and bandwidth to the tooltip
+	SHP.AddColoredDoubleLine("|cff00FFFFHome Latency:|r", colorizedHome)
+	SHP.AddColoredDoubleLine("|cff00FFFFWorld Latency:|r", colorizedWorld)
 	SHP.AddColoredDoubleLine("|cff00FFFFIncoming bandwidth:|r", colorizedBin)
 	SHP.AddColoredDoubleLine("|cff00FFFFOutgoing bandwidth:|r", colorizedBOut)
-
-	-- Show Tooltip
 	GameTooltip:Show()
 end
 
--- On Enter (MS)
+-- Use helper function in OnUpdate to update data text only
+flatency:SetScript("OnUpdate", function(_, t)
+	elapsedLatencyController = elapsedLatencyController - t
+	if elapsedLatencyController < 0 then
+		updateDataText()
+		elapsedLatencyController = SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT
+	end
+end)
+
+-- Use helper function in OnEnter to update tooltip in real time
+local function OnEnterLatency(self)
+	GameTooltip:SetOwner(self, "ANCHOR_NONE")
+	GameTooltip:SetPoint(SHP.GetTipAnchor(self))
+	updateTooltipContent() -- Initial call to display tooltip content
+
+	-- Set up OnUpdate to refresh tooltip content in real time while hovered
+	local elapsed = 0
+	self:SetScript("OnUpdate", function(_, t)
+		elapsed = elapsed + t
+		if elapsed >= SHP.UPDATE_PERIOD_TOOLTIP then
+			elapsed = 0
+			updateTooltipContent() -- Refresh tooltip content every 0.5 seconds
+		end
+	end)
+end
 data_Latency.OnEnter = OnEnterLatency
--- On Click (MS) Do nothing!
-data_Latency.OnClick = function() end
+
+local function OnLeaveLatency(self)
+	SHP.HideTooltip()
+	self:SetScript("OnUpdate", nil)
+end
+data_Latency.OnLeave = OnLeaveLatency -- Clear the `OnUpdate` handler when the tooltip is no longer hovered
+
+-- ----------------------
+-- --> ONLEAVE FUNCTIONS
+-- ----------------------
+
+-- Updated OnLeave Handlers
+data_FPS.OnLeave = function()
+	SHP.HideTooltip()
+end
 
 ----------------------
 --> FPS Data TOOLTIP
