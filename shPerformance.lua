@@ -1,14 +1,17 @@
 local _, ns = ...
 local SHP = ns.SHP
 
--- Localize: Tooltip variables
-local GameTooltip = GameTooltip
-
 ----------------------
 --> Module Frames and Update Controllers
 ----------------------
 local FRAME_FPS = CreateFrame("frame")
-local elapsedFpsController = 0
+
+-- Adding one to update period to ensure first and immediate update
+local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1
+local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1
+
+-- Since we are using latency information, get it immediately b/c it won't be updated for 30 seconds in OnUpdateScript
+local cachedLatencyText = "Initializing ms..."
 
 local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shFps", {
 	type = "data source",
@@ -19,13 +22,6 @@ local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shFps", {
 ----------------------
 --> Helper Functions
 ----------------------
--- Helper function to get formatted FPS
-local function getFormattedFPS()
-	local fps = SHP.GetFramerate()
-	local rf, gf, bf = SHP.GetFPSColor(fps)
-	return SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f fps", fps))
-end
-
 -- Helper function to get formatted memory data
 local function getFormattedMemoryData()
 	SHP.UpdateUserAddonMemoryUsageTable()
@@ -66,36 +62,37 @@ end
 
 -- Helper function to update data text for FPS display
 local function updateDataText()
-	local fpsText = getFormattedFPS()
-	DATA_TEXT_FPS.text = fpsText
+	local fpsText = SHP.UpdateFPSDataText()
+	DATA_TEXT_FPS.text = SHP.string.format("%s | %s", fpsText, cachedLatencyText)
 end
 
 -- Helper function to update tooltip content
 local function updateTooltipContent()
-	GameTooltip:ClearLines()
-	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Performance|r")
-	GameTooltip:AddLine(SHP.CONFIG.SHOW_BOTH and "[Memory/Latency]" or "[Memory]")
+	SHP.GameTooltip:ClearLines()
+	SHP.GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Performance|r")
+	SHP.GameTooltip:AddLine(SHP.CONFIG.SHOW_BOTH and "[Memory/Latency]" or "[Memory]")
 	SHP.AddLineSeparatorToTooltip()
+	SHP.AddNetworkStatsToTooltip()
 
 	-- Use helper function to add formatted memory data
 	local formattedMemoryData, totalMemory = getFormattedMemoryData()
 
 	-- Add memory details to the tooltip
 	for _, data in ipairs(formattedMemoryData) do
-		GameTooltip:AddDoubleLine(data[1], data[2])
+		SHP.GameTooltip:AddDoubleLine(data[1], data[2])
 	end
 
 	-- Display total user addon memory usage
 	SHP.AddLineSeparatorToTooltip()
-	GameTooltip:AddDoubleLine(
+	SHP.GameTooltip:AddDoubleLine(
 		" ",
 		SHP.string.format("|cffC3771ATOTAL ADDON|r memory usage → |cff06ddfa%s|r", SHP.formatMemString(totalMemory))
 	)
 
 	-- Display hint for garbage collection
 	SHP.AddLineSeparatorToTooltip()
-	GameTooltip:AddLine("→ *Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip*")
-	GameTooltip:Show()
+	SHP.GameTooltip:AddLine("→ *Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip*")
+	SHP.GameTooltip:Show()
 end
 
 ----------------------
@@ -104,6 +101,14 @@ end
 -- Update FPS data text in real time
 FRAME_FPS:SetScript("OnUpdate", function(_, t)
 	elapsedFpsController = elapsedFpsController + t
+	elapsedLatencyController = elapsedLatencyController + t
+
+	-- Update latency text every 30 seconds only due to Blizzard limitations
+	if elapsedLatencyController >= SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT then
+		elapsedLatencyController = 0
+		cachedLatencyText = SHP.UpdateLatencyDataText()
+	end
+
 	if elapsedFpsController >= SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT then
 		elapsedFpsController = 0
 		updateDataText()
@@ -112,8 +117,8 @@ end)
 
 -- Use helper function in OnEnter to update tooltip in real time
 local function OnEnterFPS(self)
-	GameTooltip:SetOwner(self, "ANCHOR_NONE")
-	GameTooltip:SetPoint(SHP.GetTipAnchor(self))
+	SHP.GameTooltip:SetOwner(self, "ANCHOR_NONE")
+	SHP.GameTooltip:SetPoint(SHP.GetTipAnchor(self))
 	updateTooltipContent() -- Initial call to display tooltip content
 
 	-- Set up OnUpdate to refresh tooltip content in real time while hovered

@@ -1,14 +1,13 @@
 local _, ns = ...
 local SHP = ns.SHP
 
--- Localize: Tooltip variables
-local GameTooltip = GameTooltip
-
 ----------------------
 --> Modules, frames, uppdate controllers
 ----------------------
 local FRAME_LATENCY = CreateFrame("frame")
-local elapsedLatencyController = 0
+
+-- Adding one to update period to ensure first and immediate update
+local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1
 local cachedDetailedLatencyText = "Initializing ms..."
 
 local DATA_TEXT_LATENCY = SHP.LibStub:NewDataObject("shLatency", {
@@ -27,16 +26,15 @@ local function updateDataText()
 	cachedDetailedLatencyText = SHP.UpdateLatencyDataText()
 	DATA_TEXT_LATENCY.text = cachedDetailedLatencyText
 end
-updateDataText() -- Immediate/first Update of data text
 
 -- Helper function to update tooltip content
 local function updateTooltipContent()
-	GameTooltip:ClearLines()
-	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Latency|r")
-	GameTooltip:AddLine("[Bandwidth/Latency]")
+	SHP.GameTooltip:ClearLines()
+	SHP.GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Latency|r")
+	SHP.GameTooltip:AddLine("[Bandwidth/Latency]")
 	SHP.AddLineSeparatorToTooltip()
 	SHP.AddNetworkStatsToTooltip()
-	GameTooltip:Show()
+	SHP.GameTooltip:Show()
 end
 
 -- DATA TEXT: OnUpdate helper function
@@ -50,8 +48,8 @@ end)
 
 -- Use helper function in OnEnter to update tooltip in real time
 local function OnEnterLatency(self)
-	GameTooltip:SetOwner(self, "ANCHOR_NONE")
-	GameTooltip:SetPoint(SHP.GetTipAnchor(self))
+	SHP.GameTooltip:SetOwner(self, "ANCHOR_NONE")
+	SHP.GameTooltip:SetPoint(SHP.GetTipAnchor(self))
 	updateTooltipContent() -- Initial call to display tooltip content
 
 	-- Set up OnUpdate to refresh tooltip content in real time while hovered
