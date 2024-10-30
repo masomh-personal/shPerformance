@@ -317,3 +317,21 @@ SHP.AddNetworkStatsToTooltip = function()
 
 	return bandwidthIn, bandwidthOut
 end
+
+--[[ 
+    Retrieves the current FPS and applies a color gradient based on the FPS value, 
+    returning the formatted FPS as a colorized string.
+
+    This function fetches the current frames per second (FPS), determines the appropriate 
+    color gradient, and formats the FPS value as a string with color coding. 
+
+    Usage:
+    Call `SHP.GetFormattedFPS()` wherever a colorized FPS string is needed for display.
+
+    @return: A string representing the FPS value, formatted with color based on the FPS level.
+]]
+SHP.UpdateFPSDataText = function()
+	local fps = SHP.GetFramerate()
+	local rf, gf, bf = SHP.GetFPSColor(fps)
+	return SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f fps", fps))
+end

@@ -27,9 +27,7 @@ local function updateDataText()
 	cachedDetailedLatencyText = SHP.UpdateLatencyDataText()
 	DATA_TEXT_LATENCY.text = cachedDetailedLatencyText
 end
-
--- INITIAL Update of data text
-updateDataText()
+updateDataText() -- Immediate/first Update of data text
 
 -- Helper function to update tooltip content
 local function updateTooltipContent()
