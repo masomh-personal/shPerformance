@@ -41,7 +41,7 @@ local function updateTooltipContent()
 	GameTooltip:Show()
 end
 
--- Use helper function in OnUpdate to update data text only
+-- DATA TEXT: OnUpdate helper function
 FRAME_LATENCY:SetScript("OnUpdate", function(_, t)
 	elapsedLatencyController = elapsedLatencyController + t
 	if elapsedLatencyController >= SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT then
