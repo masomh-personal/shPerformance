@@ -13,7 +13,7 @@ SHP.CONFIG = {
 	UPDATE_PERIOD_TOOLTIP = 2,
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
 	UPDATE_PERIOD_LATENCY_DATA_TEXT = 15, -- Static default by Blizzad is 30 (lets do it every 15 for good measure)
-	MEM_THRESHOLD = 100, -- in KB (only will show addons that use >= this number)
+	MEM_THRESHOLD = 500, -- in KB (only will show addons that use >= this number)
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
