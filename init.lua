@@ -62,7 +62,7 @@ local function CreateAddonTable()
 
 		-- Only add addons that are loadable or load on demand
 		if loadable or reason == "DEMAND_LOADED" then
-			table.insert(SHP.ADDONS_TABLE, {
+			SHP.table.insert(SHP.ADDONS_TABLE, {
 				name = name,
 				index = i, -- Store the addon’s index for easy reference later if needed
 				title = title or "Unknown Addon",

@@ -7,13 +7,14 @@ local SHP = ns.SHP
 	@param useColor: Boolean to determine if the formatted output should be colored.
 	@return: Formatted string with memory value in either "K" or "M" units, colored if specified.
 ]]
-SHP.formatMemString = function(mem, useColor)
+SHP.FormatMemString = function(mem, useColor)
 	local isMB = mem > 1024
 	local unit = isMB and "M" or "K"
 	local formattedMem = isMB and mem / 1e3 or mem
 
 	-- Conditional formatting with pseudo-ternary for optional coloring
-	return useColor and format("%.2f|cffE8D200%s|r", formattedMem, unit) or format("%.2f%s", formattedMem, unit)
+	return useColor and SHP.string.format("%.2f|cffE8D200%s|r", formattedMem, unit)
+		or SHP.string.format("%.2f%s", formattedMem, unit)
 end
 
 --[[ 
@@ -36,7 +37,7 @@ SHP.GetColorGradient = function(perc, providedColorSequence)
 	end
 
 	-- Determine the segment and interpolate
-	local segment = math.floor(perc * (num - 1))
+	local segment = SHP.math.floor(perc * (num - 1))
 	local relperc = (perc * (num - 1)) - segment
 	local r1, g1, b1 = colors[(segment * 3) + 1], colors[(segment * 3) + 2], colors[(segment * 3) + 3]
 	local r2, g2, b2 = colors[(segment * 3) + 4], colors[(segment * 3) + 5], colors[(segment * 3) + 6]
@@ -69,8 +70,8 @@ SHP.GRADIENT_TABLE = SHP.CreateGradientTable(SHP.CONFIG.GRADIENT_COLOR_SEQUENCE_
 ]]
 SHP.GetColorFromGradientTable = function(proportion, gradientTable)
 	gradientTable = gradientTable or SHP.GRADIENT_TABLE
-	local normalized_value = math.max(0, math.min(proportion * 100, 100))
-	local roundedValue = math.floor(normalized_value * 2) / 2
+	local normalized_value = SHP.math.max(0, SHP.math.min(proportion * 100, 100))
+	local roundedValue = SHP.math.floor(normalized_value * 2) / 2
 	return unpack(gradientTable[roundedValue])
 end
 
@@ -81,7 +82,7 @@ end
 ]]
 SHP.GetFPSColor = function(fps)
 	local proportion = 1 - (fps / SHP.CONFIG.FPS_GRADIENT_THRESHOLD)
-	proportion = math.max(0, math.min(proportion, 1))
+	proportion = SHP.math.max(0, SHP.math.min(proportion, 1))
 	return SHP.GetColorFromGradientTable(proportion, SHP.GRADIENT_TABLE)
 end
 
@@ -105,7 +106,7 @@ SHP.GetTipAnchor = function(frame)
 end
 
 -- Precomputed RGB Lookup for frequent colors (optional; improves heavy usage performance)
-local RGB_Lookup = {
+local RGB_LOOKUP_TABLE = {
 	green = "00FF00",
 	red = "FF0000",
 	yellow = "FFFF00",
@@ -124,13 +125,13 @@ local RGB_Lookup = {
 SHP.ColorizeText = function(r, g, b, text)
 	local hexColor
 	if r == 0 and g == 1 and b == 0 then
-		hexColor = RGB_Lookup.green
+		hexColor = RGB_LOOKUP_TABLE.green
 	elseif r == 1 and g == 1 and b == 0 then
-		hexColor = RGB_Lookup.yellow
+		hexColor = RGB_LOOKUP_TABLE.yellow
 	elseif r == 0 and g == 1 and b == 1 then
-		hexColor = RGB_Lookup.cyan
+		hexColor = RGB_LOOKUP_TABLE.cyan
 	elseif r == 1 and g == 0 and b == 0 then
-		hexColor = RGB_Lookup.red
+		hexColor = RGB_LOOKUP_TABLE.red
 	else
 		hexColor = SHP.string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
 	end
@@ -167,7 +168,7 @@ end
 --]]
 SHP.AddLineSeparatorToTooltip = function(dashedSpacer)
 	if dashedSpacer then
-		SHP.GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
+		SHP.GameTooltip:AddDoubleLine("|cffffffff——————|r", "|cffffffff——————|r")
 	else
 		SHP.GameTooltip:AddLine(" ")
 	end
