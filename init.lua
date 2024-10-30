@@ -7,8 +7,7 @@ ns.SHP = {}
 local SHP = ns.SHP
 SHP.LibStub = LibStub:GetLibrary("LibDataBroker-1.1")
 
---[[----------------CONFIG---------------------]]
-SHP.config = {
+SHP.CONFIG = {
 	WANT_ALPHA_SORTING = false,
 	WANT_COLORING = false,
 	UPDATE_PERIOD_TOOLTIP = 2,
@@ -18,7 +17,7 @@ SHP.config = {
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
-	MEM_GRADIENT_THRESHOLD = 40,
+	MEM_GRADIENT_THRESHOLD_MAX = 25E3, -- Maximum memory usage (25,000 KB)
 	BANDWIDTH_INCOMING_GRADIENT_THRESHOLD = 20,
 	BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD = 5,
 	GRADIENT_COLOR_SEQUENCE_TABLE = { 0, 0.97, 0, 0.97, 0.97, 0, 0.95, 0, 0 }, -- True RGB gradient: green -> yellow -> red

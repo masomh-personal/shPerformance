@@ -59,7 +59,7 @@ SHP.CreateGradientTable = function(providedColorSequence)
 	end
 	return gradientTable
 end
-SHP.GRADIENT_TABLE = SHP.CreateGradientTable(SHP.config.GRADIENT_COLOR_SEQUENCE_TABLE)
+SHP.GRADIENT_TABLE = SHP.CreateGradientTable(SHP.CONFIG.GRADIENT_COLOR_SEQUENCE_TABLE)
 
 --[[ 
 	Retrieves the RGB color values from the gradient table based on a proportion.
@@ -80,7 +80,7 @@ end
 	@return: RGB color values corresponding to the FPS level.
 ]]
 SHP.GetFPSColor = function(fps)
-	local proportion = 1 - (fps / SHP.config.FPS_GRADIENT_THRESHOLD)
+	local proportion = 1 - (fps / SHP.CONFIG.FPS_GRADIENT_THRESHOLD)
 	proportion = math.max(0, math.min(proportion, 1))
 	return SHP.GetColorFromGradientTable(proportion, SHP.GRADIENT_TABLE)
 end
@@ -146,7 +146,7 @@ end
 	@param g: Green component of the color (0-1) for the right text.
 	@param b: Blue component of the color (0-1) for the right text.
 --]]
-SHP.AddColoredDoubleLine = function(leftLabel, rightText, r, g, b)
+SHP.AddColoredDoubleLineToTooltip = function(leftLabel, rightText, r, g, b)
 	SHP.GameTooltip:AddDoubleLine(leftLabel, rightText, r, g, b)
 end
 
@@ -157,7 +157,7 @@ end
 	@param g: Green component of the color (0-1).
 	@param b: Blue component of the color (0-1).
 --]]
-SHP.AddColoredSingleLine = function(text, r, g, b)
+SHP.AddColoredSingleLineToTooltip = function(text, r, g, b)
 	SHP.GameTooltip:AddLine(text, r, g, b)
 end
 
@@ -165,7 +165,7 @@ end
 	Adds a line spacer to the tooltip. Optionally adds a dashed line if dashedSpacer is true.
 	@param dashedSpacer: Boolean value; if true, adds a dashed line. Otherwise, adds a blank line.
 --]]
-SHP.AddToolTipLineSpacer = function(dashedSpacer)
+SHP.AddLineSeparatorToTooltip = function(dashedSpacer)
 	if dashedSpacer then
 		SHP.GameTooltip:AddDoubleLine("|cffffffff------------|r", "|cffffffff------------|r")
 	else
@@ -199,7 +199,7 @@ end
 
     @return: A colorized string representing the FPS value.
 --]]
-SHP.GetColorizedFPSText = function()
+SHP.GetColorizedFPSString = function()
 	-- Retrieve current FPS and round down to the nearest integer
 	local fps = SHP.math.floor(SHP.GetFramerate())
 

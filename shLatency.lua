@@ -14,7 +14,7 @@ local cachedDetailedLatencyText = "Initializing ms..."
 local DATA_TEXT_LATENCY = SHP.LibStub:NewDataObject("shLatency", {
 	type = "data source",
 	text = "Initializing (ms)",
-	icon = SHP.config.MS_ICON,
+	icon = SHP.CONFIG.MS_ICON,
 })
 
 ----------------------
@@ -25,8 +25,8 @@ local function getFormattedLatency()
 	local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
 
 	-- Apply color gradients and format latency values
-	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
-	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
+	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
+	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
 	local colorizedHome = SHP.ColorizeText(rH, gH, bH, SHP.string.format("%.0f", latencyHome))
 	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, SHP.string.format("%.0f(w)", latencyWorld))
 
@@ -51,8 +51,8 @@ local function AddNetworkStatsToTooltip()
 	end
 
 	-- Calculate RGB gradient colors for latency based on thresholds in the config
-	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.config.MS_GRADIENT_THRESHOLD)
-	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.config.MS_GRADIENT_THRESHOLD)
+	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
+	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
 
 	-- Format latency values to display as integers with "ms" suffix
 	local formattedHomeLatency = string.format("%.0f ms", latencyHome)
@@ -75,10 +75,10 @@ local function AddNetworkStatsToTooltip()
 	)
 
 	-- Bandwidth Gradient RGB (one for in and one for out)
-	SHP.AddToolTipLineSpacer(true)
-	local rIn, gIn, bIn = SHP.GetColorFromGradientTable(bandwidthIn / SHP.config.BANDWIDTH_INCOMING_GRADIENT_THRESHOLD)
+	SHP.AddLineSeparatorToTooltip(true)
+	local rIn, gIn, bIn = SHP.GetColorFromGradientTable(bandwidthIn / SHP.CONFIG.BANDWIDTH_INCOMING_GRADIENT_THRESHOLD)
 	local rOut, gOut, bOut =
-		SHP.GetColorFromGradientTable(bandwidthOut / SHP.config.BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD)
+		SHP.GetColorFromGradientTable(bandwidthOut / SHP.CONFIG.BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD)
 
 	-- Format bandwidth details first
 	local formattedBin = SHP.string.format("▼ %.2f KB/s", bandwidthIn)
@@ -89,8 +89,8 @@ local function AddNetworkStatsToTooltip()
 	local colorizedBOut = SHP.ColorizeText(rOut, gOut, bOut, formattedBOut)
 
 	-- Use AddColoredDoubleLine with the colorized text
-	SHP.AddColoredDoubleLine("|cff00FFFFIncoming|r |cffFFFFFFbandwidth:|r", colorizedBin)
-	SHP.AddColoredDoubleLine("|cff00FFFFOutgoing|r |cffFFFFFFbandwidth:|r", colorizedBOut)
+	SHP.AddColoredDoubleLineToTooltip("|cff00FFFFIncoming|r |cffFFFFFFbandwidth:|r", colorizedBin)
+	SHP.AddColoredDoubleLineToTooltip("|cff00FFFFOutgoing|r |cffFFFFFFbandwidth:|r", colorizedBOut)
 end
 
 -- Helper function to update data text
@@ -109,7 +109,7 @@ local function updateTooltipContent()
 	GameTooltip:ClearLines()
 	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Latency|r")
 	GameTooltip:AddLine("[Bandwidth/Latency]")
-	SHP.AddToolTipLineSpacer()
+	SHP.AddLineSeparatorToTooltip()
 	AddNetworkStatsToTooltip()
 	GameTooltip:Show()
 end
@@ -117,7 +117,7 @@ end
 -- Use helper function in OnUpdate to update data text only
 FRAME_LATENCY:SetScript("OnUpdate", function(_, t)
 	elapsedLatencyController = elapsedLatencyController + t
-	if elapsedLatencyController >= SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT then
+	if elapsedLatencyController >= SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT then
 		elapsedLatencyController = 0
 		updateDataText()
 	end
@@ -133,7 +133,7 @@ local function OnEnterLatency(self)
 	local elapsed = 0
 	self:SetScript("OnUpdate", function(_, t)
 		elapsed = elapsed + t
-		if elapsed >= SHP.config.UPDATE_PERIOD_LATENCY_DATA_TEXT then
+		if elapsed >= SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT then
 			elapsed = 0
 			updateTooltipContent() -- Refresh tooltip content every 0.5 seconds
 		end
