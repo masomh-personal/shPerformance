@@ -231,3 +231,89 @@ SHP.HideTooltip = function()
 	GameTooltip:ClearLines()
 	GameTooltip:Hide()
 end
+
+--[[ 
+    Updates the latency data text with formatted home and world latency values.
+    
+    This function retrieves the formatted latency for both home and world connections, 
+    combines them into a single string separated by an arrow (→), and updates the 
+    `DATA_TEXT_LATENCY.text` field with this formatted output. 
+
+    Usage:
+    Call `SHP.UpdateLatencyDataText()` whenever you need to refresh or display updated 
+    latency information in the data text. 
+
+    @return: None. This function directly updates `DATA_TEXT_LATENCY.text`.
+]]
+SHP.UpdateLatencyDataText = function()
+	local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
+
+	-- Apply color gradients and format latency values
+	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
+	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
+	local colorizedHome = SHP.ColorizeText(rH, gH, bH, SHP.string.format("%.0f", latencyHome))
+	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, SHP.string.format("%.0f(w)", latencyWorld))
+
+	-- Combine latency details for display
+	return SHP.string.format("%s → %s", colorizedHome, colorizedWorld)
+end
+
+--[[ 
+    Adds network latency and bandwidth stats to a specified tooltip with colorized formatting.
+    
+    This function retrieves network statistics, formats the latency and bandwidth values with 
+    color gradients, and adds them to the specified tooltip. Supports IPv4 and IPv6 identification 
+    when available and color-codes the output based on thresholds in the configuration.
+
+    Usage:
+    Call `SHP.AddNetworkStatsToTooltip(tooltip)` within any tooltip setup to include network stats. 
+
+    @param tooltip: The tooltip object to which the network stats will be added.
+    @return: bandwidthIn, bandwidthOut - Optionally returns incoming and outgoing bandwidth values.
+]]
+SHP.AddNetworkStatsToTooltip = function()
+	-- Retrieve network stats from WoW's API or custom function
+	local bandwidthIn, bandwidthOut, latencyHome, latencyWorld = SHP.GetNetStats()
+
+	-- Define IP type texts for home and world latency
+	local ipTypeHomeText, ipTypeWorldText = "HOME", "WORLD"
+	if not SHP.GetCVarBool("useIPv6") then
+		local ipTypes = { "IPv4", "IPv6" }
+		local ipTypeHome, ipTypeWorld = SHP.GetNetIpTypes()
+		ipTypeHomeText = SHP.string.format("HOME (%s)", ipTypes[ipTypeHome or 0] or UNKNOWN)
+		ipTypeWorldText = SHP.string.format("WORLD (%s)", ipTypes[ipTypeWorld or 0] or UNKNOWN)
+	end
+
+	-- Format latency values with color gradients based on thresholds
+	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
+	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
+	local colorizedHome = SHP.ColorizeText(rH, gH, bH, SHP.string.format("%.0f ms", latencyHome))
+	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, SHP.string.format("%.0f ms", latencyWorld))
+
+	-- Add latency details to the tooltip
+	local homeHexColor, worldHexColor = "42AAFF", "DCFF42"
+	SHP.GameTooltip:AddDoubleLine(
+		SHP.string.format("|cff%s%s|r |cffFFFFFFlatency:|r", homeHexColor, ipTypeHomeText),
+		colorizedHome
+	)
+	SHP.GameTooltip:AddDoubleLine(
+		SHP.string.format("|cff%s%s|r |cffFFFFFFlatency:|r", worldHexColor, ipTypeWorldText),
+		colorizedWorld
+	)
+
+	-- Add a separator line in the tooltip
+	SHP.AddLineSeparatorToTooltip(true)
+
+	-- Format bandwidth values with color gradients based on thresholds
+	local rIn, gIn, bIn = SHP.GetColorFromGradientTable(bandwidthIn / SHP.CONFIG.BANDWIDTH_INCOMING_GRADIENT_THRESHOLD)
+	local rOut, gOut, bOut =
+		SHP.GetColorFromGradientTable(bandwidthOut / SHP.CONFIG.BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD)
+	local colorizedBin = SHP.ColorizeText(rIn, gIn, bIn, SHP.string.format("▼ %.2f KB/s", bandwidthIn))
+	local colorizedBOut = SHP.ColorizeText(rOut, gOut, bOut, SHP.string.format("▲ %.2f KB/s", bandwidthOut))
+
+	-- Add bandwidth details to the tooltip
+	SHP.AddColoredDoubleLineToTooltip("|cff00FFFFIncoming|r |cffFFFFFFbandwidth:|r", colorizedBin)
+	SHP.AddColoredDoubleLineToTooltip("|cff00FFFFOutgoing|r |cffFFFFFFbandwidth:|r", colorizedBOut)
+
+	return bandwidthIn, bandwidthOut
+end
