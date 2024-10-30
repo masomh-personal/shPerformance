@@ -74,7 +74,7 @@ local function CreateAddonTable()
 	end
 end
 
--- Initialize `SHP.ADDONS_TABLE` and creat addon table once player logs in
+-- Initialize `SHP.ADDONS_TABLE` and create addon table once player logs in
 local gFrame = CreateFrame("Frame")
 gFrame:RegisterEvent("PLAYER_LOGIN")
 gFrame:SetScript("OnEvent", function()
