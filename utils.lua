@@ -168,7 +168,7 @@ end
 --]]
 SHP.AddLineSeparatorToTooltip = function(dashedSpacer)
 	if dashedSpacer then
-		SHP.GameTooltip:AddDoubleLine("|cffffffff——————|r", "|cffffffff——————|r")
+		SHP.GameTooltip:AddDoubleLine("|cffffffff————|r", "|cffffffff————|r")
 	else
 		SHP.GameTooltip:AddLine(" ")
 	end
