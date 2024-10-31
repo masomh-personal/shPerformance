@@ -4,11 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [TWW: 1.0.1]
+## [TWW: 2.0.0]
 
 ### UPDATE
 
 - Updated TOC and version for 11.0.5 patch
+- Complete re-write of addon to make it more efficient and modular
+- Split up into THREE data texts: shPerformance, shLatency, and shFps
 
 ### ADDED
 
