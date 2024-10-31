@@ -5,9 +5,9 @@
 This addon requires a data broker display addon to be enabled. It allows you to customize the fonts of tooltips, which are handled via a tooltip addon. I highly recommend using TipTac, ElvUI, or similar add-ons for this purpose.
 
 <div align="center">
-  <img width="300" src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance.png?raw=true">
-  <img width="300" src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance.png?raw=true">
-  <img width="300" src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance.png?raw=true">
+  <img width="300" src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformanceV2.png?raw=true">
+  <img width="300" src="https://github.com/masomh-personal/shPerformance/blob/main/media/shLatency.png?raw=true">
+  <img width="300" src="https://github.com/masomh-personal/shPerformance/blob/main/media/shFps.png?raw=true">
 </div>
 
 ## Features (Data Texts for LDB compatible add-ons)
