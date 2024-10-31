@@ -4,7 +4,7 @@ local SHP = ns.SHP
 ----------------------
 --> Module Frames and Update Controllers
 ----------------------
-local FRAME_FPS = CreateFrame("frame")
+local FRAME_PERFORMANCE = CreateFrame("frame")
 
 -- Adding one to update period to ensure first and immediate update
 local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1
@@ -13,7 +13,7 @@ local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1
 -- Since we are using latency information, get it immediately b/c it won't be updated for 30 seconds in OnUpdateScript
 local cachedLatencyText = "Initializing ms..."
 
-local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shPerformance", {
+local DATA_TEXT_PERFORMANCE = SHP.LibStub:NewDataObject("shPerformance", {
 	type = "data source",
 	text = "Initializing...",
 	icon = SHP.CONFIG.FPS_ICON,
@@ -25,7 +25,7 @@ local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shPerformance", {
 -- Helper function to update data text for FPS display
 local function updateDataText()
 	local fpsText = SHP.UpdateFPSDataText()
-	DATA_TEXT_FPS.text = SHP.string.format("%s | %s", fpsText, cachedLatencyText)
+	DATA_TEXT_PERFORMANCE.text = SHP.string.format("%s | %s", fpsText, cachedLatencyText)
 end
 
 -- Sorts the addons table based on memory usage or alphabetically if configured.
@@ -128,7 +128,7 @@ end
 --> Frame Scripts
 ----------------------
 -- Update FPS data text in real time
-FRAME_FPS:SetScript("OnUpdate", function(_, t)
+FRAME_PERFORMANCE:SetScript("OnUpdate", function(_, t)
 	elapsedFpsController = elapsedFpsController + t
 	elapsedLatencyController = elapsedLatencyController + t
 
@@ -161,14 +161,14 @@ local function OnEnterFPS(self)
 		end
 	end)
 end
-DATA_TEXT_FPS.OnEnter = OnEnterFPS
+DATA_TEXT_PERFORMANCE.OnEnter = OnEnterFPS
 
 -- Clear the `OnUpdate` handler when the tooltip is no longer hovered
 local function OnLeaveFPS(self)
 	SHP.HideTooltip()
 	self:SetScript("OnUpdate", nil)
 end
-DATA_TEXT_FPS.OnLeave = OnLeaveFPS
+DATA_TEXT_PERFORMANCE.OnLeave = OnLeaveFPS
 
 -- OnClick handler for garbage collection
 local function OnClickFPS()
@@ -187,4 +187,4 @@ local function OnClickFPS()
 	-- Update tooltip after garbage collected
 	updateTooltipContent()
 end
-DATA_TEXT_FPS.OnClick = OnClickFPS
+DATA_TEXT_PERFORMANCE.OnClick = OnClickFPS

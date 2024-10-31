@@ -12,3 +12,4 @@ init.lua
 utils.lua
 shLatency.lua
 shPerformance.lua
+shFps.lua
