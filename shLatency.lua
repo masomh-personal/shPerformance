@@ -31,7 +31,7 @@ end
 local function updateTooltipContent()
 	SHP.GameTooltip:ClearLines()
 	SHP.GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Latency|r")
-	SHP.GameTooltip:AddLine("[Bandwidth/Latency]")
+	SHP.GameTooltip:AddLine("[Latency + Bandwidth]")
 	SHP.AddLineSeparatorToTooltip()
 	SHP.AddNetworkStatsToTooltip()
 	SHP.GameTooltip:Show()
