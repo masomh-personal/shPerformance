@@ -253,7 +253,7 @@ SHP.UpdateLatencyDataText = function()
 	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
 	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
 	local colorizedHome = SHP.ColorizeText(rH, gH, bH, SHP.string.format("%.0f", latencyHome))
-	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, SHP.string.format("%.0f(w)", latencyWorld))
+	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, SHP.string.format("%.0f (world)", latencyWorld))
 
 	-- Combine latency details for display
 	return SHP.string.format("%s → %s", colorizedHome, colorizedWorld)
@@ -334,5 +334,5 @@ end
 SHP.UpdateFPSDataText = function()
 	local fps = SHP.GetFramerate()
 	local rf, gf, bf = SHP.GetFPSColor(fps)
-	return SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f fps", fps))
+	return SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f", fps))
 end

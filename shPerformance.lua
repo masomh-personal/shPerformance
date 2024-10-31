@@ -13,9 +13,9 @@ local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1
 -- Since we are using latency information, get it immediately b/c it won't be updated for 30 seconds in OnUpdateScript
 local cachedLatencyText = "Initializing ms..."
 
-local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shFps", {
+local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shPerformance", {
 	type = "data source",
-	text = "Initializing (fps)",
+	text = "Initializing...",
 	icon = SHP.CONFIG.FPS_ICON,
 })
 
