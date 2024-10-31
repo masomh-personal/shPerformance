@@ -22,7 +22,7 @@ local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shFps", {
 -- Helper function to update data text
 -- Helper function to update data text for FPS display
 local function updateDataText()
-	DATA_TEXT_FPS.text = SHP.UpdateFPSDataText()
+	DATA_TEXT_FPS.text = SHP.string.format("%s FPS", SHP.UpdateFPSDataText())
 end
 
 -- Helper function to update tooltip content
