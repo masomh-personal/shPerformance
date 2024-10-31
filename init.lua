@@ -9,20 +9,20 @@ SHP.LibStub = LibStub:GetLibrary("LibDataBroker-1.1")
 
 SHP.CONFIG = {
 	WANT_ALPHA_SORTING = false,
-	WANT_COLORING = false,
-	UPDATE_PERIOD_TOOLTIP = 2,
+	UPDATE_PERIOD_TOOLTIP = 1.5,
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
 	UPDATE_PERIOD_LATENCY_DATA_TEXT = 15, -- Static default by Blizzad is 30 (lets do it every 15 for good measure)
 	MEM_THRESHOLD = 500, -- in KB (only will show addons that use >= this number)
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
-	MEM_GRADIENT_THRESHOLD_MAX = 3E4, -- Gradient upper bound (30,000 KB)
+	MEM_GRADIENT_THRESHOLD_MAX = 30e3,
 	BANDWIDTH_INCOMING_GRADIENT_THRESHOLD = 20,
 	BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD = 5,
-	GRADIENT_COLOR_SEQUENCE_TABLE = { 0, 0.97, 0, 0.97, 0.97, 0, 0.95, 0, 0 }, -- True RGB gradient: green -> yellow -> red
+	-- True RGB gradient: green -> yellow -> red
 	-- Starts with green, transitions through yellow, and ends at red (0.95, 0, 0).
 	-- This sequence provides a high-contrast gradient for maximum readability and color intensity.
+	GRADIENT_COLOR_SEQUENCE_TABLE = { 0, 0.97, 0, 0.97, 0.97, 0, 0.95, 0, 0 },
 	FPS_ICON = "Interface\\AddOns\\shPerformance\\media\\fpsicon",
 	MS_ICON = "Interface\\AddOns\\shPerformance\\media\\msicon",
 }

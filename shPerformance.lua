@@ -45,45 +45,60 @@ end
     Adds formatted addon memory usage details to the tooltip.
 ]]
 local function addMemoryUsageDetailsToTooltip()
-	local counter, hiddenAddonMemoryUsage, totalUserAddonMemoryUsage = 0, 0, 0
-	local totalNumAddons = #SHP.ADDONS_TABLE
+	local counter, hiddenAddonMemoryUsage, shownAddonMemoryUsage = 0, 0, 0
 
 	for _, addon in ipairs(SHP.ADDONS_TABLE) do
 		local addonMemUsage = addon.memory
-		totalUserAddonMemoryUsage = totalUserAddonMemoryUsage + addonMemUsage
+		shownAddonMemoryUsage = shownAddonMemoryUsage + addonMemUsage
 
-		if addonMemUsage > SHP.CONFIG.MEM_THRESHOLD or addon.name == "shPerformance" then
+		-- Check if addon exceeds memory threshold or is 'shPerformance'
+		if addonMemUsage > SHP.CONFIG.MEM_THRESHOLD then
 			counter = counter + 1
-			local r, g, b = SHP.GetColorFromGradientTable((addonMemUsage - SHP.CONFIG.MEM_THRESHOLD) / 15e3)
+
+			-- Set min and max thresholds for memory gradient (1 KB to 100 MB)
+			local minThreshold = 1e3 -- 1 KB in bytes
+			local maxThreshold = SHP.CONFIG.MEM_GRADIENT_THRESHOLD_MAX -- 100 MB in bytes
+
+			-- Calculate proportion for gradient color based on memory usage
+			local proportion = (addonMemUsage - minThreshold) / (maxThreshold - minThreshold)
+			local r, g, b = SHP.GetColorFromGradientTable(proportion)
+
+			-- Format memory usage string with color
 			local memStr = SHP.ColorizeText(r, g, b, SHP.FormatMemString(addonMemUsage))
+
+			-- Format and display addon counter with color
 			local counterText = counter < 10 and SHP.string.format("|cffDAB024 %d)|r", counter)
 				or SHP.string.format("|cffDAB024%d)|r", counter)
-			GameTooltip:AddDoubleLine(SHP.string.format("%s %s", counterText, addon.colorizedTitle), memStr)
+			SHP.GameTooltip:AddDoubleLine(SHP.string.format("%s %s", counterText, addon.colorizedTitle), memStr)
 		else
+			-- Accumulate memory usage for addons below threshold
 			hiddenAddonMemoryUsage = hiddenAddonMemoryUsage + addonMemUsage
 		end
 	end
 
+	-- Display total user addon memory usage
+	--SHP.GameTooltip:AddDoubleLine(" ", "|cffffffff————|r")
+	SHP.AddLineSeparatorToTooltip(true)
+	SHP.GameTooltip:AddDoubleLine(
+		"|cffC3771ATOTAL ADDON|r memory usage",
+		SHP.string.format("→ |cff06ddfa%s|r", SHP.FormatMemString(shownAddonMemoryUsage + hiddenAddonMemoryUsage))
+	)
+
 	if hiddenAddonMemoryUsage > 0 then
-		GameTooltip:AddDoubleLine(
+		SHP.AddLineSeparatorToTooltip()
+		SHP.GameTooltip:AddDoubleLine(
 			SHP.string.format(
-				"|cff06DDFA... [%d] hidden addons|r (usage less than %dK)",
-				totalNumAddons - counter,
+				"|cff06DDFA[%d] hidden addons|r (usage less than %dK)",
+				#SHP.ADDONS_TABLE - counter,
 				SHP.CONFIG.MEM_THRESHOLD
 			),
 			" "
 		)
 	end
 
-	-- Display total user addon memory usage
-	GameTooltip:AddDoubleLine(" ", "|cffffffff————|r")
-	GameTooltip:AddDoubleLine(
-		" ",
-		SHP.string.format(
-			"|cffC3771ATOTAL ADDON|r memory usage → |cff06ddfa%s|r",
-			SHP.FormatMemString(totalUserAddonMemoryUsage)
-		)
-	)
+	-- Display hint for forced garbage collection
+	SHP.GameTooltip:AddLine("**Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip")
+	SHP.GameTooltip:Show()
 end
 
 -- Helper function to update tooltip content
@@ -107,13 +122,6 @@ local function updateTooltipContent()
 
 	-- Display memory usage for each addon from `SHP.ADDONS_TABLE`
 	addMemoryUsageDetailsToTooltip()
-
-	-- Display hint for forced garbage collection
-	SHP.GameTooltip:AddDoubleLine(
-		" ",
-		"**Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip"
-	)
-	SHP.GameTooltip:Show()
 end
 
 ----------------------
