@@ -3,7 +3,7 @@
 ## Notes: LDB feed that displays FPS, Latency, and AddOn Memory Usage (with some tooltips!)
 ## IconTexture: Interface\Addons\shPerformance\media\shPerformance-logo.png
 ## Author: mhDesigns (formally Shaykh) - special thanks to: Tekkub, Stoutwrithe, and many others!
-## Version: 2.0.0
+## Version: 2.0.2
 
 lib/LibStub.lua
 lib/CallbackHandler-1.0.lua
