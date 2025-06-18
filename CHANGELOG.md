@@ -1,5 +1,11 @@
 # Changelog
 
+## [TWW: 2.0.4]
+
+### UPDATE
+
+- Updated TOC and version for 11.1.7
+
 ## [TWW: 2.0.3]
 
 ### UPDATE
