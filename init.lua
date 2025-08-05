@@ -11,7 +11,7 @@ SHP.CONFIG = {
 	WANT_ALPHA_SORTING = false,
 	UPDATE_PERIOD_TOOLTIP = 1.5,
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
-	UPDATE_PERIOD_LATENCY_DATA_TEXT = 15, -- Static default by Blizzad is 30 (lets do it every 15 for good measure)
+	UPDATE_PERIOD_LATENCY_DATA_TEXT = 15, -- Static default by Blizzard is 30 (lets do it every 15 for good measure)
 	MEM_THRESHOLD = 500, -- in KB (only will show addons that use >= this number)
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
@@ -27,10 +27,11 @@ SHP.CONFIG = {
 	MS_ICON = "Interface\\AddOns\\shPerformance\\media\\msicon",
 }
 
--- Localized: libraries and commonly used functions
+-- Localized: libraries and commonly used functions for performance
 local math = math
 local string = string
 local table = table
+local find = string.find -- Cache for performance
 
 SHP.math = math
 SHP.string = string
@@ -66,7 +67,7 @@ local function CreateAddonTable()
 				name = name,
 				index = i, -- Store the addon’s index for easy reference later if needed
 				title = title or "Unknown Addon",
-				colorizedTitle = title and (title:find("|cff") and title or "|cffffffff" .. title)
+				colorizedTitle = title and (find(title, "|cff") and title or "|cffffffff" .. title)
 					or "|cffffffffUnknown Addon",
 				memory = 0, -- Default memory usage, to be updated later
 			})

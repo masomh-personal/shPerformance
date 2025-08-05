@@ -1,6 +1,11 @@
 local _, ns = ...
 local SHP = ns.SHP
 
+-- Cache frequently used functions for performance
+local format = string.format
+local sort = table.sort
+local ipairs = ipairs
+
 ----------------------
 --> Module Frames and Update Controllers
 ----------------------
@@ -25,17 +30,17 @@ local DATA_TEXT_PERFORMANCE = SHP.LibStub:NewDataObject("shPerformance", {
 -- Helper function to update data text for FPS display
 local function updateDataText()
 	local fpsText = SHP.UpdateFPSDataText()
-	DATA_TEXT_PERFORMANCE.text = SHP.string.format("%s | %s", fpsText, cachedLatencyText)
+	DATA_TEXT_PERFORMANCE.text = format("%s | %s", fpsText, cachedLatencyText)
 end
 
 -- Sorts the addons table based on memory usage or alphabetically if configured.
 local function sortAddonMemoryTable()
 	if not SHP.CONFIG.WANT_ALPHA_SORTING then
-		SHP.table.sort(SHP.ADDONS_TABLE, function(a, b)
+		sort(SHP.ADDONS_TABLE, function(a, b)
 			return a.memory > b.memory
 		end)
 	else
-		SHP.table.sort(SHP.ADDONS_TABLE, function(a, b)
+		sort(SHP.ADDONS_TABLE, function(a, b)
 			return a.colorizedTitle:lower() < b.colorizedTitle:lower()
 		end)
 	end
@@ -67,9 +72,9 @@ local function addMemoryUsageDetailsToTooltip()
 			local memStr = SHP.ColorizeText(r, g, b, SHP.FormatMemString(addonMemUsage))
 
 			-- Format and display addon counter with color
-			local counterText = counter < 10 and SHP.string.format("|cffDAB024 %d)|r", counter)
-				or SHP.string.format("|cffDAB024%d)|r", counter)
-			SHP.GameTooltip:AddDoubleLine(SHP.string.format("%s %s", counterText, addon.colorizedTitle), memStr)
+			local counterText = counter < 10 and format("|cffDAB024 %d)|r", counter)
+				or format("|cffDAB024%d)|r", counter)
+			SHP.GameTooltip:AddDoubleLine(format("%s %s", counterText, addon.colorizedTitle), memStr)
 		else
 			-- Accumulate memory usage for addons below threshold
 			hiddenAddonMemoryUsage = hiddenAddonMemoryUsage + addonMemUsage
@@ -81,13 +86,13 @@ local function addMemoryUsageDetailsToTooltip()
 	SHP.AddLineSeparatorToTooltip(true)
 	SHP.GameTooltip:AddDoubleLine(
 		"|cffC3771ATOTAL ADDON|r memory usage",
-		SHP.string.format("→ |cff06ddfa%s|r", SHP.FormatMemString(shownAddonMemoryUsage + hiddenAddonMemoryUsage))
+		format("→ |cff06ddfa%s|r", SHP.FormatMemString(shownAddonMemoryUsage + hiddenAddonMemoryUsage))
 	)
 
 	if hiddenAddonMemoryUsage > 0 then
 		SHP.AddLineSeparatorToTooltip()
 		SHP.GameTooltip:AddDoubleLine(
-			SHP.string.format(
+			format(
 				"|cff06DDFA[%d] hidden addons|r (usage less than %dK)",
 				#SHP.ADDONS_TABLE - counter,
 				SHP.CONFIG.MEM_THRESHOLD
@@ -111,7 +116,7 @@ local function updateTooltipContent()
 
 	-- Add column headers and a separator line
 	SHP.AddLineSeparatorToTooltip()
-	SHP.GameTooltip:AddDoubleLine("ADDON", SHP.string.format("USAGE (|cff06ddfaabove %sK|r)", SHP.CONFIG.MEM_THRESHOLD))
+	SHP.GameTooltip:AddDoubleLine("ADDON", format("USAGE (|cff06ddfaabove %sK|r)", SHP.CONFIG.MEM_THRESHOLD))
 	SHP.AddLineSeparatorToTooltip(true)
 
 	-- Update memory usage for all addons in `SHP.ADDONS_TABLE` using the SHP method
@@ -178,7 +183,7 @@ local function OnClickFPS()
 
 	-- Display the amount of memory collected
 	print(
-		SHP.string.format(
+		format(
 			"|cff0062ffsh|r|cff0DEB11Performance|r - Garbage Collected: |cff06ddfa%s|r",
 			SHP.FormatMemString(deltaMemCollected, true)
 		)

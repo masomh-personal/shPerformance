@@ -1,6 +1,13 @@
 local _, ns = ...
 local SHP = ns.SHP
 
+-- Cache frequently used functions for performance
+local format = string.format
+local floor = math.floor
+local max = math.max
+local min = math.min
+local unpack = unpack
+
 --[[ 
 	Formats memory usage with optional color coding.
 	@param mem: Memory value in kilobytes (number).
@@ -13,8 +20,7 @@ SHP.FormatMemString = function(mem, useColor)
 	local formattedMem = isMB and mem / 1e3 or mem
 
 	-- Conditional formatting with pseudo-ternary for optional coloring
-	return useColor and SHP.string.format("%.2f|cffE8D200%s|r", formattedMem, unit)
-		or SHP.string.format("%.2f%s", formattedMem, unit)
+	return useColor and format("%.2f|cffE8D200%s|r", formattedMem, unit) or format("%.2f%s", formattedMem, unit)
 end
 
 --[[ 
@@ -37,7 +43,7 @@ SHP.GetColorGradient = function(perc, providedColorSequence)
 	end
 
 	-- Determine the segment and interpolate
-	local segment = SHP.math.floor(perc * (num - 1))
+	local segment = floor(perc * (num - 1))
 	local relperc = (perc * (num - 1)) - segment
 	local r1, g1, b1 = colors[(segment * 3) + 1], colors[(segment * 3) + 2], colors[(segment * 3) + 3]
 	local r2, g2, b2 = colors[(segment * 3) + 4], colors[(segment * 3) + 5], colors[(segment * 3) + 6]
@@ -70,8 +76,8 @@ SHP.GRADIENT_TABLE = SHP.CreateGradientTable(SHP.CONFIG.GRADIENT_COLOR_SEQUENCE_
 ]]
 SHP.GetColorFromGradientTable = function(proportion, gradientTable)
 	gradientTable = gradientTable or SHP.GRADIENT_TABLE
-	local normalized_value = SHP.math.max(0, SHP.math.min(proportion * 100, 100))
-	local roundedValue = SHP.math.floor(normalized_value * 2) / 2
+	local normalized_value = max(0, min(proportion * 100, 100))
+	local roundedValue = floor(normalized_value * 2) / 2
 	return unpack(gradientTable[roundedValue])
 end
 
@@ -82,7 +88,7 @@ end
 ]]
 SHP.GetFPSColor = function(fps)
 	local proportion = 1 - (fps / SHP.CONFIG.FPS_GRADIENT_THRESHOLD)
-	proportion = SHP.math.max(0, SHP.math.min(proportion, 1))
+	proportion = max(0, min(proportion, 1))
 	return SHP.GetColorFromGradientTable(proportion, SHP.GRADIENT_TABLE)
 end
 
@@ -133,10 +139,10 @@ SHP.ColorizeText = function(r, g, b, text)
 	elseif r == 1 and g == 0 and b == 0 then
 		hexColor = RGB_LOOKUP_TABLE.red
 	else
-		hexColor = SHP.string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+		hexColor = format("%02x%02x%02x", r * 255, g * 255, b * 255)
 	end
 
-	return SHP.string.format("|cff%s%s|r", hexColor, text)
+	return format("|cff%s%s|r", hexColor, text)
 end
 
 --[[ 
@@ -202,13 +208,13 @@ end
 --]]
 SHP.GetColorizedFPSString = function()
 	-- Retrieve current FPS and round down to the nearest integer
-	local fps = SHP.math.floor(SHP.GetFramerate())
+	local fps = floor(SHP.GetFramerate())
 
 	-- Determine color based on FPS value
 	local rf, gf, bf = SHP.GetFPSColor(fps)
 
 	-- Format FPS value with color and return the resulting string
-	return SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f", fps))
+	return SHP.ColorizeText(rf, gf, bf, format("%.0f", fps))
 end
 
 --[[ 
@@ -252,11 +258,11 @@ SHP.UpdateLatencyDataText = function()
 	-- Apply color gradients and format latency values
 	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
 	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
-	local colorizedHome = SHP.ColorizeText(rH, gH, bH, SHP.string.format("%.0f", latencyHome))
-	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, SHP.string.format("%.0f (world)", latencyWorld))
+	local colorizedHome = SHP.ColorizeText(rH, gH, bH, format("%.0f", latencyHome))
+	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, format("%.0f (world)", latencyWorld))
 
 	-- Combine latency details for display
-	return SHP.string.format("%s → %s", colorizedHome, colorizedWorld)
+	return format("%s → %s", colorizedHome, colorizedWorld)
 end
 
 --[[ 
@@ -281,24 +287,24 @@ SHP.AddNetworkStatsToTooltip = function()
 	if not SHP.GetCVarBool("useIPv6") then
 		local ipTypes = { "IPv4", "IPv6" }
 		local ipTypeHome, ipTypeWorld = SHP.GetNetIpTypes()
-		ipTypeHomeText = SHP.string.format("HOME (%s)", ipTypes[ipTypeHome or 0] or UNKNOWN)
-		ipTypeWorldText = SHP.string.format("WORLD (%s)", ipTypes[ipTypeWorld or 0] or UNKNOWN)
+		ipTypeHomeText = format("HOME (%s)", ipTypes[ipTypeHome or 0] or UNKNOWN)
+		ipTypeWorldText = format("WORLD (%s)", ipTypes[ipTypeWorld or 0] or UNKNOWN)
 	end
 
 	-- Format latency values with color gradients based on thresholds
 	local rH, gH, bH = SHP.GetColorFromGradientTable(latencyHome / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
 	local rW, gW, bW = SHP.GetColorFromGradientTable(latencyWorld / SHP.CONFIG.MS_GRADIENT_THRESHOLD)
-	local colorizedHome = SHP.ColorizeText(rH, gH, bH, SHP.string.format("%.0f ms", latencyHome))
-	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, SHP.string.format("%.0f ms", latencyWorld))
+	local colorizedHome = SHP.ColorizeText(rH, gH, bH, format("%.0f ms", latencyHome))
+	local colorizedWorld = SHP.ColorizeText(rW, gW, bW, format("%.0f ms", latencyWorld))
 
 	-- Add latency details to the tooltip
 	local homeHexColor, worldHexColor = "42AAFF", "DCFF42"
 	SHP.GameTooltip:AddDoubleLine(
-		SHP.string.format("|cff%s%s|r |cffFFFFFFlatency:|r", homeHexColor, ipTypeHomeText),
+		format("|cff%s%s|r |cffFFFFFFlatency:|r", homeHexColor, ipTypeHomeText),
 		colorizedHome
 	)
 	SHP.GameTooltip:AddDoubleLine(
-		SHP.string.format("|cff%s%s|r |cffFFFFFFlatency:|r", worldHexColor, ipTypeWorldText),
+		format("|cff%s%s|r |cffFFFFFFlatency:|r", worldHexColor, ipTypeWorldText),
 		colorizedWorld
 	)
 
@@ -309,8 +315,8 @@ SHP.AddNetworkStatsToTooltip = function()
 	local rIn, gIn, bIn = SHP.GetColorFromGradientTable(bandwidthIn / SHP.CONFIG.BANDWIDTH_INCOMING_GRADIENT_THRESHOLD)
 	local rOut, gOut, bOut =
 		SHP.GetColorFromGradientTable(bandwidthOut / SHP.CONFIG.BANDWIDTH_OUTGOING_GRADIENT_THRESHOLD)
-	local colorizedBin = SHP.ColorizeText(rIn, gIn, bIn, SHP.string.format("▼ %.2f KB/s", bandwidthIn))
-	local colorizedBOut = SHP.ColorizeText(rOut, gOut, bOut, SHP.string.format("▲ %.2f KB/s", bandwidthOut))
+	local colorizedBin = SHP.ColorizeText(rIn, gIn, bIn, format("▼ %.2f KB/s", bandwidthIn))
+	local colorizedBOut = SHP.ColorizeText(rOut, gOut, bOut, format("▲ %.2f KB/s", bandwidthOut))
 
 	-- Add bandwidth details to the tooltip
 	SHP.AddColoredDoubleLineToTooltip("|cff00FFFFIncoming|r |cffFFFFFFbandwidth:|r", colorizedBin)
@@ -334,5 +340,5 @@ end
 SHP.UpdateFPSDataText = function()
 	local fps = SHP.GetFramerate()
 	local rf, gf, bf = SHP.GetFPSColor(fps)
-	return SHP.ColorizeText(rf, gf, bf, SHP.string.format("%.0f", fps))
+	return SHP.ColorizeText(rf, gf, bf, format("%.0f", fps))
 end
