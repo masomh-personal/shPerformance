@@ -2,21 +2,31 @@ local _, ns = ...
 local SHP = ns.SHP
 
 -- Cache frequently used functions for performance
-local format = string.format
-local sort = table.sort
-local ipairs = ipairs
+local format = SHP.format or string.format
+local sort = SHP.sort or table.sort
+local ipairs = SHP.ipairs or ipairs
+local floor = SHP.floor or math.floor
+local GetTime = GetTime
 
 ----------------------
 --> Module Frames and Update Controllers
 ----------------------
 local FRAME_PERFORMANCE = CreateFrame("frame")
 
--- Adding one to update period to ensure first and immediate update
-local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1
-local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1
+-- Cache update periods for better performance
+local UPDATE_PERIOD_FPS = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT
+local UPDATE_PERIOD_LATENCY = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT
+local UPDATE_PERIOD_TOOLTIP = SHP.CONFIG.UPDATE_PERIOD_TOOLTIP
 
--- Since we are using latency information, get it immediately b/c it won't be updated for 30 seconds in OnUpdateScript
+-- Use GetTime() for more accurate timing
+local nextFpsUpdate = 0
+local nextLatencyUpdate = 0
+local nextTooltipUpdate = 0
+
+-- Cache frequently accessed data
 local cachedLatencyText = "Initializing ms..."
+local cachedFpsText = "Initializing..."
+local tooltipOwner = nil
 
 local DATA_TEXT_PERFORMANCE = SHP.LibStub:NewDataObject("shPerformance", {
 	type = "data source",
@@ -29,43 +39,46 @@ local DATA_TEXT_PERFORMANCE = SHP.LibStub:NewDataObject("shPerformance", {
 ----------------------
 -- Helper function to update data text for FPS display
 local function updateDataText()
-	local fpsText = SHP.UpdateFPSDataText()
-	DATA_TEXT_PERFORMANCE.text = format("%s | %s", fpsText, cachedLatencyText)
+	cachedFpsText = SHP.UpdateFPSDataText()
+	DATA_TEXT_PERFORMANCE.text = format("%s | %s", cachedFpsText, cachedLatencyText)
+end
+
+-- Optimized sorting function with cached comparison
+local memoryComparison, alphaComparison
+memoryComparison = function(a, b)
+	return a.memory > b.memory
+end
+alphaComparison = function(a, b)
+	return a.colorizedTitle:lower() < b.colorizedTitle:lower()
 end
 
 -- Sorts the addons table based on memory usage or alphabetically if configured.
 local function sortAddonMemoryTable()
-	if not SHP.CONFIG.WANT_ALPHA_SORTING then
-		sort(SHP.ADDONS_TABLE, function(a, b)
-			return a.memory > b.memory
-		end)
-	else
-		sort(SHP.ADDONS_TABLE, function(a, b)
-			return a.colorizedTitle:lower() < b.colorizedTitle:lower()
-		end)
-	end
+	sort(SHP.ADDONS_TABLE, SHP.CONFIG.WANT_ALPHA_SORTING and alphaComparison or memoryComparison)
 end
 
---[[ 
-    Adds formatted addon memory usage details to the tooltip.
-]]
+-- Optimized memory usage details function
 local function addMemoryUsageDetailsToTooltip()
 	local counter, hiddenAddonMemoryUsage, shownAddonMemoryUsage = 0, 0, 0
+	local addonsTable = SHP.ADDONS_TABLE
+	local threshold = SHP.CONFIG.MEM_THRESHOLD
+	local maxThreshold = SHP.CONFIG.MEM_GRADIENT_THRESHOLD_MAX
+	local minThreshold = 1e3 -- 1 KB in bytes
 
-	for _, addon in ipairs(SHP.ADDONS_TABLE) do
+	-- Pre-calculate gradient range
+	local gradientRange = maxThreshold - minThreshold
+
+	for i = 1, #addonsTable do
+		local addon = addonsTable[i]
 		local addonMemUsage = addon.memory
 		shownAddonMemoryUsage = shownAddonMemoryUsage + addonMemUsage
 
-		-- Check if addon exceeds memory threshold or is 'shPerformance'
-		if addonMemUsage > SHP.CONFIG.MEM_THRESHOLD then
+		-- Check if addon exceeds memory threshold
+		if addonMemUsage > threshold then
 			counter = counter + 1
 
-			-- Set min and max thresholds for memory gradient (1 KB to 100 MB)
-			local minThreshold = 1e3 -- 1 KB in bytes
-			local maxThreshold = SHP.CONFIG.MEM_GRADIENT_THRESHOLD_MAX -- 100 MB in bytes
-
 			-- Calculate proportion for gradient color based on memory usage
-			local proportion = (addonMemUsage - minThreshold) / (maxThreshold - minThreshold)
+			local proportion = (addonMemUsage - minThreshold) / gradientRange
 			local r, g, b = SHP.GetColorFromGradientTable(proportion)
 
 			-- Format memory usage string with color
@@ -82,7 +95,6 @@ local function addMemoryUsageDetailsToTooltip()
 	end
 
 	-- Display total user addon memory usage
-	--SHP.GameTooltip:AddDoubleLine(" ", "|cffffffff————|r")
 	SHP.AddLineSeparatorToTooltip(true)
 	SHP.GameTooltip:AddDoubleLine(
 		"|cffC3771ATOTAL ADDON|r memory usage",
@@ -92,11 +104,7 @@ local function addMemoryUsageDetailsToTooltip()
 	if hiddenAddonMemoryUsage > 0 then
 		SHP.AddLineSeparatorToTooltip()
 		SHP.GameTooltip:AddDoubleLine(
-			format(
-				"|cff06DDFA[%d] hidden addons|r (usage less than %dK)",
-				#SHP.ADDONS_TABLE - counter,
-				SHP.CONFIG.MEM_THRESHOLD
-			),
+			format("|cff06DDFA[%d] hidden addons|r (usage less than %dK)", #addonsTable - counter, threshold),
 			" "
 		)
 	end
@@ -130,48 +138,51 @@ local function updateTooltipContent()
 end
 
 ----------------------
---> Frame Scripts
+--> Optimized Single OnUpdate Handler
 ----------------------
--- Update FPS data text in real time
-FRAME_PERFORMANCE:SetScript("OnUpdate", function(_, t)
-	elapsedFpsController = elapsedFpsController + t
-	elapsedLatencyController = elapsedLatencyController + t
+-- Single OnUpdate handler for all updates
+local function OnUpdateHandler(self, elapsed)
+	local currentTime = GetTime()
 
-	-- Update latency text every 30 seconds only due to Blizzard limitations
-	if elapsedLatencyController >= SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT then
-		elapsedLatencyController = 0
+	-- Update latency text
+	if currentTime >= nextLatencyUpdate then
+		nextLatencyUpdate = currentTime + UPDATE_PERIOD_LATENCY
 		cachedLatencyText = SHP.UpdateLatencyDataText()
 	end
 
-	-- Update FPS text based on config and independent of latency updates
-	if elapsedFpsController >= SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT then
-		elapsedFpsController = 0
+	-- Update FPS text
+	if currentTime >= nextFpsUpdate then
+		nextFpsUpdate = currentTime + UPDATE_PERIOD_FPS
 		updateDataText()
 	end
-end)
 
+	-- Update tooltip if visible
+	if tooltipOwner and currentTime >= nextTooltipUpdate then
+		nextTooltipUpdate = currentTime + UPDATE_PERIOD_TOOLTIP
+		updateTooltipContent()
+	end
+end
+
+-- Set the single OnUpdate handler
+FRAME_PERFORMANCE:SetScript("OnUpdate", OnUpdateHandler)
+
+----------------------
+--> Event Handlers
+----------------------
 -- Use helper function in OnEnter to update tooltip in real time
 local function OnEnterFPS(self)
 	SHP.GameTooltip:SetOwner(self, "ANCHOR_NONE")
 	SHP.GameTooltip:SetPoint(SHP.GetTipAnchor(self))
+	tooltipOwner = self
+	nextTooltipUpdate = 0 -- Force immediate update
 	updateTooltipContent() -- Initial call to display tooltip content
-
-	-- Set up OnUpdate to refresh tooltip content in real time while hovered
-	local elapsed = 0
-	self:SetScript("OnUpdate", function(_, t)
-		elapsed = elapsed + t
-		if elapsed >= SHP.CONFIG.UPDATE_PERIOD_TOOLTIP then
-			elapsed = 0
-			updateTooltipContent() -- Refresh tooltip content
-		end
-	end)
 end
 DATA_TEXT_PERFORMANCE.OnEnter = OnEnterFPS
 
--- Clear the `OnUpdate` handler when the tooltip is no longer hovered
+-- Clear the tooltip owner when the tooltip is no longer hovered
 local function OnLeaveFPS(self)
 	SHP.HideTooltip()
-	self:SetScript("OnUpdate", nil)
+	tooltipOwner = nil
 end
 DATA_TEXT_PERFORMANCE.OnLeave = OnLeaveFPS
 
@@ -190,6 +201,8 @@ local function OnClickFPS()
 	)
 
 	-- Update tooltip after garbage collected
-	updateTooltipContent()
+	if tooltipOwner then
+		updateTooltipContent()
+	end
 end
 DATA_TEXT_PERFORMANCE.OnClick = OnClickFPS

@@ -2,11 +2,12 @@ local _, ns = ...
 local SHP = ns.SHP
 
 -- Cache frequently used functions for performance
-local format = string.format
-local floor = math.floor
+local format = SHP.format or string.format
+local floor = SHP.floor or math.floor
 local max = math.max
 local min = math.min
 local unpack = unpack
+local ipairs = SHP.ipairs or ipairs
 
 --[[ 
 	Formats memory usage with optional color coding.
@@ -117,6 +118,8 @@ local RGB_LOOKUP_TABLE = {
 	red = "FF0000",
 	yellow = "FFFF00",
 	cyan = "00FFFF",
+	white = "FFFFFF",
+	orange = "FFA500",
 }
 
 --[[ 
@@ -138,8 +141,12 @@ SHP.ColorizeText = function(r, g, b, text)
 		hexColor = RGB_LOOKUP_TABLE.cyan
 	elseif r == 1 and g == 0 and b == 0 then
 		hexColor = RGB_LOOKUP_TABLE.red
+	elseif r == 1 and g == 1 and b == 1 then
+		hexColor = RGB_LOOKUP_TABLE.white
+	elseif r == 1 and g == 0.647 and b == 0 then
+		hexColor = RGB_LOOKUP_TABLE.orange
 	else
-		hexColor = format("%02x%02x%02x", r * 255, g * 255, b * 255)
+		hexColor = format("%02x%02x%02x", floor(r * 255 + 0.5), floor(g * 255 + 0.5), floor(b * 255 + 0.5))
 	end
 
 	return format("|cff%s%s|r", hexColor, text)
@@ -193,7 +200,9 @@ SHP.UpdateUserAddonMemoryUsageTable = function()
 	SHP.UpdateAddOnMemoryUsage() -- WoW API call to refresh memory data
 
 	-- Loop through each addon in `SHP.ADDONS_TABLE` (now an array) and update its memory usage
-	for _, addonData in ipairs(SHP.ADDONS_TABLE) do
+	local addonsTable = SHP.ADDONS_TABLE
+	for i = 1, #addonsTable do
+		local addonData = addonsTable[i]
 		-- Retrieve memory usage for each addon by its `index`
 		-- `SHP.GetAddOnMemoryUsage(addonData.index)` returns memory in KB; fallback to 0 if unavailable
 		addonData.memory = SHP.GetAddOnMemoryUsage(addonData.index) or 0

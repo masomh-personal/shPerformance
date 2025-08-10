@@ -32,10 +32,22 @@ local math = math
 local string = string
 local table = table
 local find = string.find -- Cache for performance
+local pairs = pairs
+local ipairs = ipairs
+local format = string.format
+local floor = math.floor
+local sort = table.sort
+local insert = table.insert
 
 SHP.math = math
 SHP.string = string
 SHP.table = table
+SHP.pairs = pairs
+SHP.ipairs = ipairs
+SHP.format = format
+SHP.floor = floor
+SHP.sort = sort
+SHP.insert = insert
 SHP.GameTooltip = GameTooltip
 
 SHP.GetFramerate = GetFramerate
@@ -63,9 +75,9 @@ local function CreateAddonTable()
 
 		-- Only add addons that are loadable or load on demand
 		if loadable or reason == "DEMAND_LOADED" then
-			SHP.table.insert(SHP.ADDONS_TABLE, {
+			insert(SHP.ADDONS_TABLE, {
 				name = name,
-				index = i, -- Store the addon’s index for easy reference later if needed
+				index = i, -- Store the addon's index for easy reference later if needed
 				title = title or "Unknown Addon",
 				colorizedTitle = title and (find(title, "|cff") and title or "|cffffffff" .. title)
 					or "|cffffffffUnknown Addon",
