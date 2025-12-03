@@ -1,6 +1,32 @@
 local _, ns = ...
 local SHP = ns.SHP
 
+-- ===================================================================================
+-- OPTIMIZED: Localize all frequently used functions
+-- ===================================================================================
+local GetFramerate = SHP.GetFramerate
+local GetNetStats = SHP.GetNetStats
+local GetNetIpTypes = SHP.GetNetIpTypes
+local UpdateAddOnMemoryUsage = SHP.UpdateAddOnMemoryUsage
+local GetAddOnMemoryUsage = SHP.GetAddOnMemoryUsage
+local GameTooltip = SHP.GameTooltip
+local UIParent = UIParent
+local C_CVar = C_CVar
+local GetTime = SHP.GetTime
+local unpack = unpack
+local ipairs = ipairs
+
+local math_floor = SHP.math.floor
+local math_max = SHP.math.max
+local math_min = SHP.math.min
+local string_format = SHP.string.format
+local string_lower = SHP.string.lower
+local table_sort = SHP.table.sort
+
+-- Cache frequently accessed tables
+local FORMAT_STRINGS = SHP.FORMAT_STRINGS
+local GRADIENT_TABLE = SHP.GRADIENT_TABLE
+
 --[[ 
 	Formats memory usage with optional color coding.
 	@param mem: Memory value in kilobytes (number).

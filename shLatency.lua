@@ -1,6 +1,14 @@
 local _, ns = ...
 local SHP = ns.SHP
 
+-- ===================================================================================
+-- OPTIMIZED: Localize frequently used functions
+-- ===================================================================================
+local CreateFrame = CreateFrame
+local string_format = SHP.string.format
+local GameTooltip = SHP.GameTooltip
+local FORMAT_STRINGS = SHP.FORMAT_STRINGS
+
 ----------------------
 --> Modules, frames, uppdate controllers
 ----------------------
@@ -29,12 +37,12 @@ end
 
 -- Helper function to update tooltip content
 local function updateTooltipContent()
-	SHP.GameTooltip:ClearLines()
-	SHP.GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Latency|r")
-	SHP.GameTooltip:AddLine("[Latency + Bandwidth]")
+	GameTooltip:ClearLines()
+	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Latency|r")
+	GameTooltip:AddLine("[Latency + Bandwidth]")
 	SHP.AddLineSeparatorToTooltip()
 	SHP.AddNetworkStatsToTooltip()
-	SHP.GameTooltip:Show()
+	GameTooltip:Show()
 end
 
 -- DATA TEXT: OnUpdate helper function
@@ -46,27 +54,33 @@ FRAME_LATENCY:SetScript("OnUpdate", function(_, t)
 	end
 end)
 
--- Use helper function in OnEnter to update tooltip in real time
-local function OnEnterLatency(self)
-	SHP.GameTooltip:SetOwner(self, "ANCHOR_NONE")
-	SHP.GameTooltip:SetPoint(SHP.GetTipAnchor(self))
-	updateTooltipContent() -- Initial call to display tooltip content
+-- ===================================================================================
+-- OPTIMIZED: Reusable tooltip update handler to prevent memory leaks
+-- ===================================================================================
+local tooltipUpdateHandler = function(self, elapsed)
+	self.tooltipElapsed = (self.tooltipElapsed or 0) + elapsed
+	if self.tooltipElapsed >= SHP.CONFIG.UPDATE_PERIOD_TOOLTIP then
+		self.tooltipElapsed = 0
+		updateTooltipContent() -- Refresh tooltip content
+	end
+end
 
-	-- Set up OnUpdate to refresh tooltip content in real time while hovered
-	local elapsed = 0
-	self:SetScript("OnUpdate", function(_, t)
-		elapsed = elapsed + t
-		if elapsed >= SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT then
-			elapsed = 0
-			updateTooltipContent() -- Refresh tooltip content every 0.5 seconds
-		end
-	end)
+-- Use reusable handler in OnEnter to prevent closure creation
+local function OnEnterLatency(self)
+	GameTooltip:SetOwner(self, "ANCHOR_NONE")
+	GameTooltip:SetPoint(SHP.GetTipAnchor(self))
+	updateTooltipContent() -- Initial call to display tooltip content
+	
+	-- Reset elapsed counter and use reusable handler
+	self.tooltipElapsed = 0
+	self:SetScript("OnUpdate", tooltipUpdateHandler)
 end
 DATA_TEXT_LATENCY.OnEnter = OnEnterLatency
 
--- Clear the `OnUpdate` handler when the tooltip is no longer hovered
+-- Clear the OnUpdate handler when the tooltip is no longer hovered
 local function OnLeaveLatency(self)
 	SHP.HideTooltip()
 	self:SetScript("OnUpdate", nil)
+	self.tooltipElapsed = nil
 end
 DATA_TEXT_LATENCY.OnLeave = OnLeaveLatency
