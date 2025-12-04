@@ -188,6 +188,8 @@ See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 - Full API localization
 - Compatible with WoW 11.2.7
 
+---
+
 <div align="center">
   
   **Happy Gaming!**
