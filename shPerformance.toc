@@ -1,9 +1,9 @@
-## Interface: 110200
+## Interface: 110207
 ## Title: |cff0062ffsh|rPerformance |cffdeb111(LDB)|r
 ## Notes: LDB feed that displays FPS, Latency, and AddOn Memory Usage (with some tooltips!)
 ## IconTexture: Interface\Addons\shPerformance\media\shPerformance-logo.png
 ## Author: mhDesigns (formally Shaykh) - special thanks to: Tekkub, Stoutwrithe, and many others!
-## Version: 2.0.5
+## Version: 3.0.0
 
 lib/LibStub.lua
 lib/CallbackHandler-1.0.lua

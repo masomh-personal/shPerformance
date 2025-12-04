@@ -1,6 +1,21 @@
 local _, ns = ...
 local SHP = ns.SHP
 
+-- ===================================================================================
+-- OPTIMIZED: Localize frequently used functions
+-- ===================================================================================
+local CreateFrame = CreateFrame
+local GetTime = SHP.GetTime
+local ipairs = ipairs
+local string_format = SHP.string.format
+local math_floor = SHP.math.floor
+local math_min = SHP.math.min
+local collectgarbage = SHP.collectgarbage
+local print = print
+
+local GameTooltip = SHP.GameTooltip
+local FORMAT_STRINGS = SHP.FORMAT_STRINGS
+
 ----------------------
 --> Module Frames and Update Controllers
 ----------------------
@@ -25,7 +40,7 @@ local DATA_TEXT_PERFORMANCE = SHP.LibStub:NewDataObject("shPerformance", {
 -- Helper function to update data text for FPS display
 local function updateDataText()
 	local fpsText = SHP.UpdateFPSDataText()
-	DATA_TEXT_PERFORMANCE.text = SHP.string.format("%s | %s", fpsText, cachedLatencyText)
+	DATA_TEXT_PERFORMANCE.text = string_format(FORMAT_STRINGS.PERFORMANCE_TEXT, fpsText, cachedLatencyText)
 end
 
 -- Sorts the addons table based on memory usage or alphabetically if configured.
@@ -67,9 +82,9 @@ local function addMemoryUsageDetailsToTooltip()
 			local memStr = SHP.ColorizeText(r, g, b, SHP.FormatMemString(addonMemUsage))
 
 			-- Format and display addon counter with color
-			local counterText = counter < 10 and SHP.string.format("|cffDAB024 %d)|r", counter)
-				or SHP.string.format("|cffDAB024%d)|r", counter)
-			SHP.GameTooltip:AddDoubleLine(SHP.string.format("%s %s", counterText, addon.colorizedTitle), memStr)
+			local counterText = counter < 10 and string_format(FORMAT_STRINGS.ADDON_COUNTER_SINGLE, counter)
+				or string_format(FORMAT_STRINGS.ADDON_COUNTER_DOUBLE, counter)
+			GameTooltip:AddDoubleLine(string_format("%s %s", counterText, addon.colorizedTitle), memStr)
 		else
 			-- Accumulate memory usage for addons below threshold
 			hiddenAddonMemoryUsage = hiddenAddonMemoryUsage + addonMemUsage
@@ -79,16 +94,16 @@ local function addMemoryUsageDetailsToTooltip()
 	-- Display total user addon memory usage
 	--SHP.GameTooltip:AddDoubleLine(" ", "|cffffffff————|r")
 	SHP.AddLineSeparatorToTooltip(true)
-	SHP.GameTooltip:AddDoubleLine(
+	GameTooltip:AddDoubleLine(
 		"|cffC3771ATOTAL ADDON|r memory usage",
-		SHP.string.format("→ |cff06ddfa%s|r", SHP.FormatMemString(shownAddonMemoryUsage + hiddenAddonMemoryUsage))
+		string_format(FORMAT_STRINGS.TOTAL_MEMORY, SHP.FormatMemString(shownAddonMemoryUsage + hiddenAddonMemoryUsage))
 	)
 
 	if hiddenAddonMemoryUsage > 0 then
 		SHP.AddLineSeparatorToTooltip()
-		SHP.GameTooltip:AddDoubleLine(
-			SHP.string.format(
-				"|cff06DDFA[%d] hidden addons|r (usage less than %dK)",
+		GameTooltip:AddDoubleLine(
+			string_format(
+				FORMAT_STRINGS.ADDON_HIDDEN,
 				#SHP.ADDONS_TABLE - counter,
 				SHP.CONFIG.MEM_THRESHOLD
 			),
@@ -97,21 +112,21 @@ local function addMemoryUsageDetailsToTooltip()
 	end
 
 	-- Display hint for forced garbage collection
-	SHP.GameTooltip:AddLine("**Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip")
-	SHP.GameTooltip:Show()
+	GameTooltip:AddLine("**Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip")
+	GameTooltip:Show()
 end
 
 -- Helper function to update tooltip content
 local function updateTooltipContent()
-	SHP.GameTooltip:ClearLines()
-	SHP.GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Performance|r")
-	SHP.GameTooltip:AddLine("[Latency + Memory]")
+	GameTooltip:ClearLines()
+	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Performance|r")
+	GameTooltip:AddLine("[Latency + Memory]")
 	SHP.AddLineSeparatorToTooltip()
 	SHP.AddNetworkStatsToTooltip()
 
 	-- Add column headers and a separator line
 	SHP.AddLineSeparatorToTooltip()
-	SHP.GameTooltip:AddDoubleLine("ADDON", SHP.string.format("USAGE (|cff06ddfaabove %sK|r)", SHP.CONFIG.MEM_THRESHOLD))
+	GameTooltip:AddDoubleLine("ADDON", string_format(FORMAT_STRINGS.ADDON_USAGE_HEADER, SHP.CONFIG.MEM_THRESHOLD))
 	SHP.AddLineSeparatorToTooltip(true)
 
 	-- Update memory usage for all addons in `SHP.ADDONS_TABLE` using the SHP method
@@ -145,28 +160,34 @@ FRAME_PERFORMANCE:SetScript("OnUpdate", function(_, t)
 	end
 end)
 
--- Use helper function in OnEnter to update tooltip in real time
-local function OnEnterFPS(self)
-	SHP.GameTooltip:SetOwner(self, "ANCHOR_NONE")
-	SHP.GameTooltip:SetPoint(SHP.GetTipAnchor(self))
-	updateTooltipContent() -- Initial call to display tooltip content
+-- ===================================================================================
+-- OPTIMIZED: Reusable tooltip update handler to prevent memory leaks
+-- ===================================================================================
+local tooltipUpdateHandler = function(self, elapsed)
+	self.tooltipElapsed = (self.tooltipElapsed or 0) + elapsed
+	if self.tooltipElapsed >= SHP.CONFIG.UPDATE_PERIOD_TOOLTIP then
+		self.tooltipElapsed = 0
+		updateTooltipContent() -- Refresh tooltip content
+	end
+end
 
-	-- Set up OnUpdate to refresh tooltip content in real time while hovered
-	local elapsed = 0
-	self:SetScript("OnUpdate", function(_, t)
-		elapsed = elapsed + t
-		if elapsed >= SHP.CONFIG.UPDATE_PERIOD_TOOLTIP then
-			elapsed = 0
-			updateTooltipContent() -- Refresh tooltip content
-		end
-	end)
+-- Use reusable handler in OnEnter to prevent closure creation
+local function OnEnterFPS(self)
+	GameTooltip:SetOwner(self, "ANCHOR_NONE")
+	GameTooltip:SetPoint(SHP.GetTipAnchor(self))
+	updateTooltipContent() -- Initial call to display tooltip content
+	
+	-- Reset elapsed counter and use reusable handler
+	self.tooltipElapsed = 0
+	self:SetScript("OnUpdate", tooltipUpdateHandler)
 end
 DATA_TEXT_PERFORMANCE.OnEnter = OnEnterFPS
 
--- Clear the `OnUpdate` handler when the tooltip is no longer hovered
+-- Clear the OnUpdate handler when the tooltip is no longer hovered
 local function OnLeaveFPS(self)
 	SHP.HideTooltip()
 	self:SetScript("OnUpdate", nil)
+	self.tooltipElapsed = nil
 end
 DATA_TEXT_PERFORMANCE.OnLeave = OnLeaveFPS
 
@@ -178,7 +199,7 @@ local function OnClickFPS()
 
 	-- Display the amount of memory collected
 	print(
-		SHP.string.format(
+		string_format(
 			"|cff0062ffsh|r|cff0DEB11Performance|r - Garbage Collected: |cff06ddfa%s|r",
 			SHP.FormatMemString(deltaMemCollected, true)
 		)

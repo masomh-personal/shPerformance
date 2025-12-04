@@ -1,6 +1,32 @@
 local _, ns = ...
 local SHP = ns.SHP
 
+-- ===================================================================================
+-- OPTIMIZED: Localize all frequently used functions
+-- ===================================================================================
+local GetFramerate = SHP.GetFramerate
+local GetNetStats = SHP.GetNetStats
+local GetNetIpTypes = SHP.GetNetIpTypes
+local UpdateAddOnMemoryUsage = SHP.UpdateAddOnMemoryUsage
+local GetAddOnMemoryUsage = SHP.GetAddOnMemoryUsage
+local GameTooltip = SHP.GameTooltip
+local UIParent = UIParent
+local C_CVar = C_CVar
+local GetTime = SHP.GetTime
+local unpack = unpack
+local ipairs = ipairs
+
+local math_floor = SHP.math.floor
+local math_max = SHP.math.max
+local math_min = SHP.math.min
+local string_format = SHP.string.format
+local string_lower = SHP.string.lower
+local table_sort = SHP.table.sort
+
+-- Cache frequently accessed tables
+local FORMAT_STRINGS = SHP.FORMAT_STRINGS
+local GRADIENT_TABLE = SHP.GRADIENT_TABLE
+
 --[[ 
 	Formats memory usage with optional color coding.
 	@param mem: Memory value in kilobytes (number).
@@ -17,126 +43,84 @@ SHP.FormatMemString = function(mem, useColor)
 		or SHP.string.format("%.2f%s", formattedMem, unit)
 end
 
---[[ 
-	Interpolates between colors in a sequence based on a percentage.
-	@param perc: Percentage (0 to 1) representing the position in the gradient.
-	@param providedColorSequence: Optional table of RGB values (default is green -> yellow -> red).
-	@return: Interpolated RGB color values.
-]]
-SHP.GetColorGradient = function(perc, providedColorSequence)
-	local colors = providedColorSequence or { 0, 1, 0, 1, 1, 0, 1, 0, 0 }
-	local num = #colors / 3
-
-	-- Clamp the percentage
-	if perc >= 1 then
-		local r, g, b = colors[(num - 1) * 3 + 1], colors[(num - 1) * 3 + 2], colors[(num - 1) * 3 + 3]
-		return r, g, b
-	elseif perc <= 0 then
-		local r, g, b = colors[1], colors[2], colors[3]
-		return r, g, b
-	end
-
-	-- Determine the segment and interpolate
-	local segment = SHP.math.floor(perc * (num - 1))
-	local relperc = (perc * (num - 1)) - segment
-	local r1, g1, b1 = colors[(segment * 3) + 1], colors[(segment * 3) + 2], colors[(segment * 3) + 3]
-	local r2, g2, b2 = colors[(segment * 3) + 4], colors[(segment * 3) + 5], colors[(segment * 3) + 6]
-
-	return r1 + (r2 - r1) * relperc, g1 + (g2 - g1) * relperc, b1 + (b2 - b1) * relperc
+-- ===================================================================================
+-- OPTIMIZED: Direct gradient lookup from pre-computed table
+-- The new gradient table in init.lua uses integer keys (0-100) with named fields
+-- ===================================================================================
+SHP.GetColorFromGradientTable = function(proportion)
+	-- Convert proportion (0-1) to index (0-100)
+	local index = math_min(100, math_max(0, math_floor(proportion * 100 + 0.5)))
+	local entry = GRADIENT_TABLE[index]
+	-- Return the r, g, b values from the named fields
+	return entry.r, entry.g, entry.b
 end
 
---[[ 
-	Creates a gradient table with color values interpolated at 0.5% intervals.
-	@param providedColorSequence: Optional color sequence for gradient creation.
-	@return: Gradient table with RGB values mapped from 0 to 100 percent.
-]]
-SHP.CreateGradientTable = function(providedColorSequence)
-	local gradientTable = {}
-	local colorSequence = providedColorSequence or nil
-	for i = 0, 200 do
-		local percent = i / 2 -- 0.5% intervals
-		local r, g, b = SHP.GetColorGradient(percent / 100, colorSequence)
-		gradientTable[percent] = { r, g, b }
-	end
-	return gradientTable
-end
-SHP.GRADIENT_TABLE = SHP.CreateGradientTable(SHP.CONFIG.GRADIENT_COLOR_SEQUENCE_TABLE)
-
---[[ 
-	Retrieves the RGB color values from the gradient table based on a proportion.
-	@param proportion: Proportion (0 to 1) to map to a color.
-	@param gradientTable: Optional gradient table (default is SHP.GRADIENT_TABLE).
-	@return: RGB values from the gradient table.
-]]
-SHP.GetColorFromGradientTable = function(proportion, gradientTable)
-	gradientTable = gradientTable or SHP.GRADIENT_TABLE
-	local normalized_value = SHP.math.max(0, SHP.math.min(proportion * 100, 100))
-	local roundedValue = SHP.math.floor(normalized_value * 2) / 2
-	return unpack(gradientTable[roundedValue])
+-- ===================================================================================
+-- OPTIMIZED: Get pre-computed hex color for efficiency
+-- ===================================================================================
+SHP.GetColorHex = function(proportion)
+	local index = math_min(100, math_max(0, math_floor(proportion * 100 + 0.5)))
+	return GRADIENT_TABLE[index].hex
 end
 
---[[ 
-	Returns the appropriate color for FPS text based on the FPS value.
-	@param fps: Frames per second value.
-	@return: RGB color values corresponding to the FPS level.
-]]
+-- ===================================================================================
+-- OPTIMIZED: FPS color calculation
+-- ===================================================================================
 SHP.GetFPSColor = function(fps)
-	local proportion = 1 - (fps / SHP.CONFIG.FPS_GRADIENT_THRESHOLD)
-	proportion = SHP.math.max(0, SHP.math.min(proportion, 1))
-	return SHP.GetColorFromGradientTable(proportion, SHP.GRADIENT_TABLE)
+	local proportion = 1 - math_min(1, math_max(0, fps / SHP.CONFIG.FPS_GRADIENT_THRESHOLD))
+	return SHP.GetColorFromGradientTable(proportion)
 end
 
---[[ 
-	Determines the optimal anchor point for tooltips based on the provided frame's position on the screen.
-	@param frame: The frame for which the tooltip anchor position is calculated.
-	@return: The tooltip anchor point, relative frame, and attachment point based on the screen position
---]]
+
+-- ===================================================================================
+-- OPTIMIZED: Efficient tooltip anchor calculation
+-- ===================================================================================
 SHP.GetTipAnchor = function(frame)
 	local x, y = frame:GetCenter()
 	if not x or not y then
 		return "TOPLEFT", "BOTTOMLEFT"
 	end
-
-	-- Determine horizontal and vertical halves based on screen location
-	local hhalf = (x > UIParent:GetWidth() * 2 / 3) and "RIGHT" or (x < UIParent:GetWidth() / 3) and "LEFT" or ""
-	local vhalf = (y > UIParent:GetHeight() / 2) and "TOP" or "BOTTOM"
-
-	-- Return calculated tooltip position based on frame's screen section
-	return vhalf .. hhalf, frame, (vhalf == "TOP" and "BOTTOM" or "TOP") .. hhalf
+	
+	local screenWidth = UIParent:GetWidth()
+	local screenHeight = UIParent:GetHeight()
+	
+	local hPos = (x > screenWidth * 0.66) and "RIGHT" or (x < screenWidth * 0.33) and "LEFT" or ""
+	local vPos = (y > screenHeight * 0.5) and "TOP" or "BOTTOM"
+	
+	return vPos .. hPos, frame, (vPos == "TOP" and "BOTTOM" or "TOP") .. hPos
 end
 
--- Precomputed RGB Lookup for frequent colors (optional; improves heavy usage performance)
-local RGB_LOOKUP_TABLE = {
+-- ===================================================================================
+-- OPTIMIZED: Color cache for common colors
+-- ===================================================================================
+local COLOR_CACHE = {
 	green = "00FF00",
 	red = "FF0000",
 	yellow = "FFFF00",
 	cyan = "00FFFF",
+	white = "FFFFFF",
 }
 
---[[ 
-    Formats a string with a specific RGB color for display in the game tooltip or UI.
-    @param r: Red component of the color (0 to 1)
-    @param g: Green component of the color (0 to 1)
-    @param b: Blue component of the color (0 to 1)
-    @param text: The string of text to be colorized
-    @return: A formatted string wrapped in the specified RGB color, ready for display
---]]
--- Optimized ColorizeText using RGB_Lookup (if applicable colors are reused frequently)
+-- ===================================================================================
+-- OPTIMIZED: Fast color text formatting with caching
+-- ===================================================================================
 SHP.ColorizeText = function(r, g, b, text)
-	local hexColor
+	local hex
+	
+	-- Check color cache for common colors
 	if r == 0 and g == 1 and b == 0 then
-		hexColor = RGB_LOOKUP_TABLE.green
+		hex = COLOR_CACHE.green
 	elseif r == 1 and g == 1 and b == 0 then
-		hexColor = RGB_LOOKUP_TABLE.yellow
-	elseif r == 0 and g == 1 and b == 1 then
-		hexColor = RGB_LOOKUP_TABLE.cyan
+		hex = COLOR_CACHE.yellow
 	elseif r == 1 and g == 0 and b == 0 then
-		hexColor = RGB_LOOKUP_TABLE.red
+		hex = COLOR_CACHE.red
+	elseif r == 0 and g == 1 and b == 1 then
+		hex = COLOR_CACHE.cyan
 	else
-		hexColor = SHP.string.format("%02x%02x%02x", r * 255, g * 255, b * 255)
+		hex = string_format(FORMAT_STRINGS.HEX_FORMAT, r * 255, g * 255, b * 255)
 	end
-
-	return SHP.string.format("|cff%s%s|r", hexColor, text)
+	
+	return string_format(FORMAT_STRINGS.COLOR_WRAP, hex, text)
 end
 
 --[[ 
