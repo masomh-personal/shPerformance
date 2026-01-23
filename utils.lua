@@ -11,7 +11,6 @@ local UpdateAddOnMemoryUsage = SHP.UpdateAddOnMemoryUsage
 local GetAddOnMemoryUsage = SHP.GetAddOnMemoryUsage
 local GameTooltip = SHP.GameTooltip
 local UIParent = UIParent
-local C_CVar = C_CVar
 local GetTime = SHP.GetTime
 local unpack = unpack
 local ipairs = ipairs

@@ -10,12 +10,12 @@ local GameTooltip = SHP.GameTooltip
 local FORMAT_STRINGS = SHP.FORMAT_STRINGS
 
 ----------------------
---> Modules, frames, uppdate controllers
+--> Modules, frames, update controllers
 ----------------------
 local FRAME_FPS = CreateFrame("frame")
 
 -- Adding one to update period to ensure first and immediate update
-local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1
+local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1
 
 local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shFps", {
 	type = "data source",
@@ -45,9 +45,9 @@ end
 
 -- DATA TEXT: OnUpdate helper function
 FRAME_FPS:SetScript("OnUpdate", function(_, t)
-	elapsedLatencyController = elapsedLatencyController + t
-	if elapsedLatencyController >= SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT then
-		elapsedLatencyController = 0
+	elapsedFpsController = elapsedFpsController + t
+	if elapsedFpsController >= SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT then
+		elapsedFpsController = 0
 		updateDataText()
 	end
 end)

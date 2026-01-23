@@ -1,5 +1,20 @@
 # Changelog
 
+## [3.1.0] - 2026-01-23
+
+### Updated
+
+- **WoW Midnight Support** - Updated TOC to interface version **120000** for WoW 12.0 Midnight
+- **Added Category metadata** - New `## Category: Data Broker` for improved addon list organization in WoW 11.1.0+
+
+### Fixed
+
+- **Fixed misleading variable name** in `shFps.lua` - Renamed `elapsedLatencyController` to `elapsedFpsController`
+- **Fixed typo** in section comments - Changed "uppdate" to "update" in `shFps.lua` and `shLatency.lua`
+- **Removed unused localization** - Cleaned up unused `C_CVar` variable in `utils.lua`
+
+---
+
 ## [3.0.0] - 2024-12-03
 
 ### MAJOR PERFORMANCE OPTIMIZATIONS

@@ -10,7 +10,7 @@ local GameTooltip = SHP.GameTooltip
 local FORMAT_STRINGS = SHP.FORMAT_STRINGS
 
 ----------------------
---> Modules, frames, uppdate controllers
+--> Modules, frames, update controllers
 ----------------------
 local FRAME_LATENCY = CreateFrame("frame")
 
