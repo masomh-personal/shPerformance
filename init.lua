@@ -20,7 +20,6 @@ local GameTooltip = GameTooltip
 local UIParent = UIParent
 local CreateFrame = CreateFrame
 local C_AddOns = C_AddOns
-local C_CVar = C_CVar
 local GetTime = GetTime
 local unpack = unpack
 local ipairs = ipairs
@@ -42,18 +41,7 @@ local table_sort = table.sort
 -- OPTIMIZED: Pre-cached format strings to avoid runtime string building
 -- ===================================================================================
 local FORMAT_STRINGS = {
-	FPS = "%.0f",
 	FPS_TEXT = "%s FPS",
-	LATENCY = "%.0f",
-	LATENCY_WORLD = "%.0f (world)",
-	LATENCY_COMBINED = "%s → %s",
-	MEMORY_KB = "%.2fK",
-	MEMORY_MB = "%.2fM",
-	MEMORY_COLORED_KB = "%.2f|cffE8D200K|r",
-	MEMORY_COLORED_MB = "%.2f|cffE8D200M|r",
-	BANDWIDTH_IN = "▼ %.2f KB/s",
-	BANDWIDTH_OUT = "▲ %.2f KB/s",
-	LATENCY_MS = "%.0f ms",
 	PERFORMANCE_TEXT = "%s | %s",
 	ADDON_COUNTER_SINGLE = "|cffDAB024 %d)|r",
 	ADDON_COUNTER_DOUBLE = "|cffDAB024%d)|r",
@@ -62,16 +50,13 @@ local FORMAT_STRINGS = {
 	TOTAL_MEMORY = "→ |cff06ddfa%s|r",
 	COLOR_WRAP = "|cff%s%s|r",
 	HEX_FORMAT = "%02x%02x%02x",
-	IP_TYPE_FORMAT = "%s (%s)",
-	LATENCY_LABEL_HOME = "|cff%s%s|r |cffFFFFFFlatency:|r",
-	LATENCY_LABEL_WORLD = "|cff%s%s|r |cffFFFFFFlatency:|r",
 }
 
 SHP.CONFIG = {
 	WANT_ALPHA_SORTING = false,
 	UPDATE_PERIOD_TOOLTIP = 1.5,
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
-	UPDATE_PERIOD_LATENCY_DATA_TEXT = 15, -- Static default by Blizzad is 30 (lets do it every 15 for good measure)
+	UPDATE_PERIOD_LATENCY_DATA_TEXT = 15, -- Blizzard's static default is 30; refresh every 15 for more responsive displays.
 	MEM_THRESHOLD = 500, -- in KB (only will show addons that use >= this number)
 	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
@@ -114,7 +99,6 @@ SHP.GetNumAddOns = C_AddOns.GetNumAddOns
 SHP.GetAddOnInfo = C_AddOns.GetAddOnInfo
 SHP.IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 SHP.GetNetStats = GetNetStats
-SHP.GetCVarBool = C_CVar.GetCVarBool
 SHP.GetNetIpTypes = GetNetIpTypes
 SHP.GetTime = GetTime
 

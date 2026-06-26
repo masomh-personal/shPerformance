@@ -1,5 +1,26 @@
 # Changelog
 
+## [v12-1] - 2026-06-25
+
+### Updated
+
+- **WoW 12.0.7 Support** - Updated TOC to interface version **120007** for WoW 12.0.7
+- **Documentation refresh** - Updated README version references and compatibility notes for WoW 12.0.7
+
+### Changed
+
+- **Simplified network IP labels** - Tooltip labels now use `GetNetIpTypes()` directly instead of gating IP type display behind the `useIPv6` CVar
+- **Reduced duplicate tooltip boilerplate** - Shared LDB tooltip handlers now live in `utils.lua`
+- **Refreshed embedded CallbackHandler** - Updated bundled `CallbackHandler-1.0` from minor 3 to minor 8
+
+### Fixed
+
+- **Fixed memory unit conversion** - Memory values now use a consistent 1024 KB to 1 MB conversion
+- **Removed unused helpers and format strings** - Cleaned up dead utility functions and stale pre-cached format strings
+- **Corrected misleading comments** - Updated memory threshold and latency refresh comments to match actual behavior
+
+---
+
 ## [3.1.0] - 2026-01-23
 
 ### Updated

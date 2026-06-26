@@ -3,8 +3,8 @@
 <div align="center">
   <img src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance-logo.png?raw=true" alt="shPerformance Logo" width="128">
   
-  [![WoW Version](https://img.shields.io/badge/WoW-12.0%20Midnight-blue)](https://worldofwarcraft.com)
-  [![Version](https://img.shields.io/badge/Version-3.1.0-green)](https://github.com/masomh-personal/shPerformance/releases)
+  [![WoW Version](https://img.shields.io/badge/WoW-12.0.7%20Midnight-blue)](https://worldofwarcraft.com)
+  [![Version](https://img.shields.io/badge/Version-v12--1-green)](https://github.com/masomh-personal/shPerformance/releases)
   [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
   
   **High-performance LibDataBroker addon for real-time system monitoring in World of Warcraft**
@@ -64,7 +64,7 @@ Extensively tested in demanding environments:
 
 ### Requirements
 
-- **World of Warcraft** 12.0 (Midnight) or later
+- **World of Warcraft** 12.0.7 (Midnight) or later
 - **LibDataBroker Display Addon** (Choose one):
   - [Titan Panel](https://www.curseforge.com/wow/addons/titan-panel)
   - [Bazooka](https://www.curseforge.com/wow/addons/bazooka)
@@ -180,12 +180,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-**Latest Version: 3.1.0** (2026-01-23)
+**Latest Version: v12-1** (2026-06-25)
 
-- Updated for WoW 12.0 Midnight
-- Added Category metadata for improved addon list organization
+- Updated for WoW 12.0.7 Midnight
+- Refined shared tooltip handling
 - Code cleanup and minor fixes
-- Compatible with WoW 12.0 Midnight
+- Compatible with WoW 12.0.7 Midnight
 
 ---
 

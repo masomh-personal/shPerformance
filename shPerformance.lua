@@ -5,12 +5,8 @@ local SHP = ns.SHP
 -- OPTIMIZED: Localize frequently used functions
 -- ===================================================================================
 local CreateFrame = CreateFrame
-local GetTime = SHP.GetTime
 local ipairs = ipairs
 local string_format = SHP.string.format
-local math_floor = SHP.math.floor
-local math_min = SHP.math.min
-local collectgarbage = SHP.collectgarbage
 local print = print
 
 local GameTooltip = SHP.GameTooltip
@@ -56,7 +52,7 @@ local function sortAddonMemoryTable()
 	end
 end
 
---[[ 
+--[[
     Adds formatted addon memory usage details to the tooltip.
 ]]
 local function addMemoryUsageDetailsToTooltip()
@@ -70,9 +66,9 @@ local function addMemoryUsageDetailsToTooltip()
 		if addonMemUsage > SHP.CONFIG.MEM_THRESHOLD then
 			counter = counter + 1
 
-			-- Set min and max thresholds for memory gradient (1 KB to 100 MB)
-			local minThreshold = 1e3 -- 1 KB in bytes
-			local maxThreshold = SHP.CONFIG.MEM_GRADIENT_THRESHOLD_MAX -- 100 MB in bytes
+			-- WoW reports addon memory in KB; color the gradient from 1 MB to the configured max.
+			local minThreshold = 1e3 -- 1 MB in KB
+			local maxThreshold = SHP.CONFIG.MEM_GRADIENT_THRESHOLD_MAX -- 30 MB in KB by default
 
 			-- Calculate proportion for gradient color based on memory usage
 			local proportion = (addonMemUsage - minThreshold) / (maxThreshold - minThreshold)
@@ -147,7 +143,7 @@ FRAME_PERFORMANCE:SetScript("OnUpdate", function(_, t)
 	elapsedFpsController = elapsedFpsController + t
 	elapsedLatencyController = elapsedLatencyController + t
 
-	-- Update latency text every 30 seconds only due to Blizzard limitations
+	-- Update latency text on the configured slower interval due to Blizzard's own network stat cadence.
 	if elapsedLatencyController >= SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT then
 		elapsedLatencyController = 0
 		cachedLatencyText = SHP.UpdateLatencyDataText()
@@ -160,36 +156,7 @@ FRAME_PERFORMANCE:SetScript("OnUpdate", function(_, t)
 	end
 end)
 
--- ===================================================================================
--- OPTIMIZED: Reusable tooltip update handler to prevent memory leaks
--- ===================================================================================
-local tooltipUpdateHandler = function(self, elapsed)
-	self.tooltipElapsed = (self.tooltipElapsed or 0) + elapsed
-	if self.tooltipElapsed >= SHP.CONFIG.UPDATE_PERIOD_TOOLTIP then
-		self.tooltipElapsed = 0
-		updateTooltipContent() -- Refresh tooltip content
-	end
-end
-
--- Use reusable handler in OnEnter to prevent closure creation
-local function OnEnterFPS(self)
-	GameTooltip:SetOwner(self, "ANCHOR_NONE")
-	GameTooltip:SetPoint(SHP.GetTipAnchor(self))
-	updateTooltipContent() -- Initial call to display tooltip content
-	
-	-- Reset elapsed counter and use reusable handler
-	self.tooltipElapsed = 0
-	self:SetScript("OnUpdate", tooltipUpdateHandler)
-end
-DATA_TEXT_PERFORMANCE.OnEnter = OnEnterFPS
-
--- Clear the OnUpdate handler when the tooltip is no longer hovered
-local function OnLeaveFPS(self)
-	SHP.HideTooltip()
-	self:SetScript("OnUpdate", nil)
-	self.tooltipElapsed = nil
-end
-DATA_TEXT_PERFORMANCE.OnLeave = OnLeaveFPS
+SHP.AttachTooltipHandlers(DATA_TEXT_PERFORMANCE, updateTooltipContent)
 
 -- OnClick handler for garbage collection
 local function OnClickFPS()
