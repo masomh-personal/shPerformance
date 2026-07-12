@@ -56,11 +56,11 @@ end
     Adds formatted addon memory usage details to the tooltip.
 ]]
 local function addMemoryUsageDetailsToTooltip()
-	local counter, hiddenAddonMemoryUsage, shownAddonMemoryUsage = 0, 0, 0
+	local counter, hiddenAddonMemoryUsage, totalAddonMemoryUsage = 0, 0, 0
 
 	for _, addon in ipairs(SHP.ADDONS_TABLE) do
 		local addonMemUsage = addon.memory
-		shownAddonMemoryUsage = shownAddonMemoryUsage + addonMemUsage
+		totalAddonMemoryUsage = totalAddonMemoryUsage + addonMemUsage
 
 		-- Check if addon exceeds memory threshold or is 'shPerformance'
 		if addonMemUsage > SHP.CONFIG.MEM_THRESHOLD then
@@ -92,7 +92,7 @@ local function addMemoryUsageDetailsToTooltip()
 	SHP.AddLineSeparatorToTooltip(true)
 	GameTooltip:AddDoubleLine(
 		"|cffC3771ATOTAL ADDON|r memory usage",
-		string_format(FORMAT_STRINGS.TOTAL_MEMORY, SHP.FormatMemString(shownAddonMemoryUsage + hiddenAddonMemoryUsage))
+		string_format(FORMAT_STRINGS.TOTAL_MEMORY, SHP.FormatMemString(totalAddonMemoryUsage))
 	)
 
 	if hiddenAddonMemoryUsage > 0 then
