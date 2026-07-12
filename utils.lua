@@ -178,11 +178,10 @@ SHP.UpdateUserAddonMemoryUsageTable = function()
 	-- Refresh memory usage data for all loaded addons in WoW
 	SHP.UpdateAddOnMemoryUsage() -- WoW API call to refresh memory data
 
-	-- Loop through each addon in `SHP.ADDONS_TABLE` (now an array) and update its memory usage
+	-- Loop through each addon in `SHP.ADDONS_TABLE` and update its memory usage
 	for _, addonData in ipairs(SHP.ADDONS_TABLE) do
-		-- Retrieve memory usage for each addon by its `index`
-		-- `SHP.GetAddOnMemoryUsage(addonData.index)` returns memory in KB; fallback to 0 if unavailable
-		addonData.memory = SHP.GetAddOnMemoryUsage(addonData.index) or 0
+		-- Names remain valid if the client changes addon index ordering.
+		addonData.memory = SHP.GetAddOnMemoryUsage(addonData.name) or 0
 	end
 end
 

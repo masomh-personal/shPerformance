@@ -142,10 +142,10 @@ local function CreateAddonTable()
 	local numAddOns = SHP.GetNumAddOns()
 
 	for i = 1, numAddOns do
-		local name, title, _, loadable, reason = SHP.GetAddOnInfo(i)
+		local name, title, _, loadable, reason, security = SHP.GetAddOnInfo(i)
 
-		-- Only add addons that are loadable or load on demand
-		if loadable or reason == "DEMAND_LOADED" then
+		-- Memory usage can only be queried safely for user-installed addons.
+		if security == "INSECURE" and (loadable or reason == "DEMAND_LOADED") then
 			local colorizedTitle
 			if title then
 				colorizedTitle = string_find(title, "|cff") and title or "|cffffffff" .. title
@@ -155,7 +155,6 @@ local function CreateAddonTable()
 			
 			table_insert(SHP.ADDONS_TABLE, {
 				name = name,
-				index = i, -- Store the addon's index for easy reference later if needed
 				title = title or "Unknown Addon",
 				colorizedTitle = colorizedTitle,
 				memory = 0, -- Default memory usage, to be updated later
