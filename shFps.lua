@@ -12,7 +12,7 @@ local FORMAT_STRINGS = SHP.FORMAT_STRINGS
 ----------------------
 --> Modules, frames, update controllers
 ----------------------
-local FRAME_FPS = CreateFrame("frame")
+local FRAME_FPS = CreateFrame("Frame")
 
 -- Adding one to update period to ensure first and immediate update
 local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1

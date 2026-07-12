@@ -63,7 +63,7 @@ end
 SHP.GetTipAnchor = function(frame)
 	local x, y = frame:GetCenter()
 	if not x or not y then
-		return "TOPLEFT", "BOTTOMLEFT"
+		return "TOPLEFT", frame, "BOTTOMLEFT"
 	end
 	
 	local screenWidth = UIParent:GetWidth()

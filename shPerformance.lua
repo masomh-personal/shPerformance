@@ -15,7 +15,7 @@ local FORMAT_STRINGS = SHP.FORMAT_STRINGS
 ----------------------
 --> Module Frames and Update Controllers
 ----------------------
-local FRAME_PERFORMANCE = CreateFrame("frame")
+local FRAME_PERFORMANCE = CreateFrame("Frame")
 
 -- Adding one to update period to ensure first and immediate update
 local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1
@@ -47,7 +47,7 @@ local function sortAddonMemoryTable()
 		end)
 	else
 		SHP.table.sort(SHP.ADDONS_TABLE, function(a, b)
-			return a.colorizedTitle:lower() < b.colorizedTitle:lower()
+			return a.title:lower() < b.title:lower()
 		end)
 	end
 end
