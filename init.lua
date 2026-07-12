@@ -132,6 +132,7 @@ local function InitializeGradientTable()
 		}
 	end
 end
+InitializeGradientTable()
 SHP.GRADIENT_TABLE = GRADIENT_TABLE
 
 -- Initialize `SHP.ADDONS_TABLE` as an array-style table
@@ -170,7 +171,6 @@ gFrame:SetScript("OnEvent", function(self, event)
 	if event == "PLAYER_LOGIN" then
 		-- Populate the addons table only once on login
 		CreateAddonTable()
-		InitializeGradientTable()
 		self:UnregisterEvent("PLAYER_LOGIN")
 		self:SetScript("OnEvent", nil)
 	end

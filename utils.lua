@@ -41,6 +41,9 @@ SHP.GetColorFromGradientTable = function(proportion)
 	-- Convert proportion (0-1) to index (0-100)
 	local index = math_min(100, math_max(0, math_floor(proportion * 100 + 0.5)))
 	local entry = GRADIENT_TABLE[index]
+	if not entry then
+		return 1, 1, 1
+	end
 	-- Return the r, g, b values from the named fields
 	return entry.r, entry.g, entry.b
 end
