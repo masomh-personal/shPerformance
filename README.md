@@ -4,7 +4,7 @@
   <img src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance-logo.png?raw=true" alt="shPerformance Logo" width="128">
   
   [![WoW Version](https://img.shields.io/badge/WoW-12.0.7%20Midnight-blue)](https://worldofwarcraft.com)
-  [![Version](https://img.shields.io/badge/Version-v12--1-green)](https://github.com/masomh-personal/shPerformance/releases)
+  [![Version](https://img.shields.io/badge/Version-v12--2-green)](https://github.com/masomh-personal/shPerformance/releases)
   [![License](https://img.shields.io/badge/License-GPL--3.0-yellow)](LICENSE)
   
   **Lightweight LibDataBroker addon for system monitoring in World of Warcraft**
@@ -191,12 +191,12 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-**Latest Version: v12-1** (2026-06-25)
+**Latest Version: v12-2** (2026-07-13)
 
-- Updated for WoW 12.0.7 Midnight
-- Refined shared tooltip handling
-- Code cleanup and minor fixes
-- Compatible with WoW 12.0.7 Midnight
+- Hardened addon-memory queries and total accounting
+- Added local checks and an in-game diagnostics dashboard
+- Improved broker tooltip behavior and initialization safety
+- Aligned metadata and documentation with GPL-3.0
 
 ---
 

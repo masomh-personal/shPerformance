@@ -3,7 +3,7 @@
 ## Notes: LDB feed that displays FPS, Latency, and AddOn Memory Usage (with some tooltips!)
 ## IconTexture: Interface\Addons\shPerformance\media\shPerformance-logo.png
 ## Author: mhDesigns (formerly Shaykh) - special thanks to: Tekkub, Stoutwrithe, and many others!
-## Version: v12-1
+## Version: v12-2
 ## Category: Data Broker
 
 lib/LibStub.lua
