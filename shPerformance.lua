@@ -172,7 +172,8 @@ local function OnClickFPS()
 		)
 	)
 
-	-- Update tooltip after garbage collected
-	updateTooltipContent()
+	if GameTooltip:IsShown() then
+		updateTooltipContent()
+	end
 end
 DATA_TEXT_PERFORMANCE.OnClick = OnClickFPS
