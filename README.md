@@ -4,12 +4,12 @@
   <img src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance-logo.png?raw=true" alt="shPerformance Logo" width="128">
   
   [![WoW Version](https://img.shields.io/badge/WoW-12.0.7%20Midnight-blue)](https://worldofwarcraft.com)
-  [![Version](https://img.shields.io/badge/Version-v12--1-green)](https://github.com/masomh-personal/shPerformance/releases)
-  [![License](https://img.shields.io/badge/License-MIT-yellow)](LICENSE)
+  [![Version](https://img.shields.io/badge/Version-v12--2-green)](https://github.com/masomh-personal/shPerformance/releases)
+  [![License](https://img.shields.io/badge/License-GPL--3.0-yellow)](LICENSE)
   
-  **High-performance LibDataBroker addon for real-time system monitoring in World of Warcraft**
+  **Lightweight LibDataBroker addon for system monitoring in World of Warcraft**
   
-  *Optimized for zero memory leaks and minimal CPU usage, even in 40-person raids*
+  *Throttled updates, shared utilities, and no combat-data dependencies*
 </div>
 
 ## Features
@@ -41,24 +41,13 @@ Choose any combination that fits your UI:
   <img width="280" src="https://github.com/masomh-personal/shPerformance/blob/main/media/shFps.png?raw=true" alt="shFps tooltip">
 </div>
 
-## Performance
+## Runtime Design
 
-### **Version 3.0 Optimizations**
-
-- **Zero Memory Leaks** - Reusable handlers prevent closure creation
-- **60-75% Lower CPU Usage** - Optimized update cycles and calculations
-- **97% Fewer Allocations** - From ~15KB to ~0.5KB per tooltip hover
-- **3x Faster Color Lookups** - Pre-computed gradient table with cached hex values
-- **10-30% Faster API Calls** - Complete localization of WoW and Lua functions
-
-### **Raid-Ready Performance**
-
-Extensively tested in demanding environments:
-
-- Stable in 40-person raids
-- No performance degradation over time
-- Minimal memory footprint (~350KB base)
-- Efficient garbage collection
+- FPS updates are throttled to 1.5 seconds by default.
+- Network updates are throttled to 15 seconds by default.
+- Color gradients are computed once during addon loading.
+- Addon memory is refreshed only while the combined tooltip is open.
+- The addon does not read combat-sensitive unit, aura, cooldown, or combat-log data.
 
 ## Installation
 
@@ -101,7 +90,7 @@ SHP.CONFIG = {
     UPDATE_PERIOD_LATENCY_DATA_TEXT = 15, -- Network stats update
 
     -- Display Settings
-    MEM_THRESHOLD = 500,                -- Min KB to show addon (default: 500)
+    MEM_THRESHOLD = 500,                -- Show addons above this KB value
     WANT_ALPHA_SORTING = false,         -- Sort alphabetically vs by memory
 
     -- Performance Thresholds
@@ -119,25 +108,27 @@ SHP.CONFIG = {
 
 ### Tooltip Interaction
 
-- **Click** - Force garbage collection and update memory stats
+- **Click** - Force garbage collection and refresh the visible tooltip
 - **Hover** - View detailed addon memory usage and network stats
+
+### Diagnostics
+
+Run `/shperformance test` (or `/shp test`) to open an on-demand dashboard. It checks gradient boundaries, memory formatting, required APIs, LDB feeds, and safe addon-memory refreshes.
 
 ## Technical Details
 
 ### Architecture
 
 - **Modular Design** - Three independent LDB objects share optimized core utilities
-- **Event-Driven Updates** - Efficient timing system with configurable intervals
-- **Smart Caching** - Pre-computed gradients, format strings, and hex colors
-- **Memory Efficient** - Reusable handlers, no dynamic closures, minimal allocations
+- **Throttled Updates** - Separate configurable intervals for FPS, network, and tooltips
+- **Shared Utilities** - Common color, tooltip, memory, and network helpers
+- **On-Demand Diagnostics** - The test dashboard creates no background updater
 
 ### Optimizations
 
-- All WoW API and Lua functions localized for faster lookups
-- Pre-cached format strings eliminate runtime concatenation
-- Gradient table with 100 pre-computed colors (1% precision)
-- Direct table lookups replace complex calculations
-- Efficient memory formatting with clear branching
+- Frequently used WoW API and Lua functions are localized.
+- Format strings and a 101-entry gradient table are cached.
+- Tooltip and broker updates are rate-limited.
 
 ### File Structure
 
@@ -148,7 +139,10 @@ shPerformance/
 ├── shPerformance.lua     # Combined display module
 ├── shFps.lua            # FPS-focused module
 ├── shLatency.lua        # Latency-focused module
+├── diagnostics.lua      # On-demand in-game checks
 ├── shPerformance.toc    # Addon metadata
+├── scripts/check.sh     # Local structural validation
+├── .githooks/pre-push   # Optional native Git hook
 └── lib/                 # Required libraries
     ├── LibStub.lua
     ├── LibDataBroker-1.1.lua
@@ -166,9 +160,26 @@ Contributions are welcome! Please feel free to submit issues or pull requests on
 3. Document any new configuration options
 4. Follow existing code style and formatting
 
+### Local Checks
+
+Run `sh scripts/check.sh` before committing. The checker validates TOC entries, runtime assets, WoW 12 restricted API usage, and Lua syntax when `luac` is installed.
+
+To enable the native pre-push hook without changing Git configuration:
+
+```sh
+cp .githooks/pre-push .git/hooks/pre-push
+chmod +x .git/hooks/pre-push
+```
+
+The hook runs the same local checker. No GitHub Actions workflow is required.
+
+### WoW 12 Secret Values
+
+shPerformance only reads frame rate, network statistics, and user-addon memory. It does not consume APIs that return secret combat values. Any future unit health, power, aura, cooldown, combat-log, `C_Secrets`, or `C_RestrictedActions` usage requires an explicit WoW 12 safety review.
+
 ## License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+This project is licensed under the GNU General Public License v3.0 - see the [LICENSE](LICENSE) file for details.
 
 ## Credits
 
@@ -180,12 +191,12 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-**Latest Version: v12-1** (2026-06-25)
+**Latest Version: v12-2** (2026-07-13)
 
-- Updated for WoW 12.0.7 Midnight
-- Refined shared tooltip handling
-- Code cleanup and minor fixes
-- Compatible with WoW 12.0.7 Midnight
+- Hardened addon-memory queries and total accounting
+- Added local checks and an in-game diagnostics dashboard
+- Improved broker tooltip behavior and initialization safety
+- Aligned metadata and documentation with GPL-3.0
 
 ---
 

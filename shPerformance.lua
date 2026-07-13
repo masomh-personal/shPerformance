@@ -15,13 +15,13 @@ local FORMAT_STRINGS = SHP.FORMAT_STRINGS
 ----------------------
 --> Module Frames and Update Controllers
 ----------------------
-local FRAME_PERFORMANCE = CreateFrame("frame")
+local FRAME_PERFORMANCE = CreateFrame("Frame")
 
 -- Adding one to update period to ensure first and immediate update
 local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1
 local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1
 
--- Since we are using latency information, get it immediately b/c it won't be updated for 30 seconds in OnUpdateScript
+-- Use a placeholder until the first throttled network update.
 local cachedLatencyText = "Initializing ms..."
 
 local DATA_TEXT_PERFORMANCE = SHP.LibStub:NewDataObject("shPerformance", {
@@ -47,7 +47,7 @@ local function sortAddonMemoryTable()
 		end)
 	else
 		SHP.table.sort(SHP.ADDONS_TABLE, function(a, b)
-			return a.colorizedTitle:lower() < b.colorizedTitle:lower()
+			return a.title:lower() < b.title:lower()
 		end)
 	end
 end
@@ -56,11 +56,11 @@ end
     Adds formatted addon memory usage details to the tooltip.
 ]]
 local function addMemoryUsageDetailsToTooltip()
-	local counter, hiddenAddonMemoryUsage, shownAddonMemoryUsage = 0, 0, 0
+	local counter, hiddenAddonMemoryUsage, totalAddonMemoryUsage = 0, 0, 0
 
 	for _, addon in ipairs(SHP.ADDONS_TABLE) do
 		local addonMemUsage = addon.memory
-		shownAddonMemoryUsage = shownAddonMemoryUsage + addonMemUsage
+		totalAddonMemoryUsage = totalAddonMemoryUsage + addonMemUsage
 
 		-- Check if addon exceeds memory threshold or is 'shPerformance'
 		if addonMemUsage > SHP.CONFIG.MEM_THRESHOLD then
@@ -92,7 +92,7 @@ local function addMemoryUsageDetailsToTooltip()
 	SHP.AddLineSeparatorToTooltip(true)
 	GameTooltip:AddDoubleLine(
 		"|cffC3771ATOTAL ADDON|r memory usage",
-		string_format(FORMAT_STRINGS.TOTAL_MEMORY, SHP.FormatMemString(shownAddonMemoryUsage + hiddenAddonMemoryUsage))
+		string_format(FORMAT_STRINGS.TOTAL_MEMORY, SHP.FormatMemString(totalAddonMemoryUsage))
 	)
 
 	if hiddenAddonMemoryUsage > 0 then
@@ -172,7 +172,8 @@ local function OnClickFPS()
 		)
 	)
 
-	-- Update tooltip after garbage collected
-	updateTooltipContent()
+	if GameTooltip:IsShown() then
+		updateTooltipContent()
+	end
 end
 DATA_TEXT_PERFORMANCE.OnClick = OnClickFPS

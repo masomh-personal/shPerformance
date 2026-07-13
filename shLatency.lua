@@ -12,7 +12,7 @@ local FORMAT_STRINGS = SHP.FORMAT_STRINGS
 ----------------------
 --> Modules, frames, update controllers
 ----------------------
-local FRAME_LATENCY = CreateFrame("frame")
+local FRAME_LATENCY = CreateFrame("Frame")
 
 -- Adding one to update period to ensure first and immediate update
 local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1

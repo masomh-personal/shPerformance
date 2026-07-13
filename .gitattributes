@@ -1,2 +1,7 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+
+# Keep documentation screenshots out of packaged git archives
+/media/shFps.png export-ignore
+/media/shLatency.png export-ignore
+/media/shPerformanceV2.png export-ignore

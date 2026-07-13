@@ -24,7 +24,7 @@ local GRADIENT_TABLE = SHP.GRADIENT_TABLE
 	@return: Formatted string with memory value in either "K" or "M" units, colored if specified.
 ]]
 SHP.FormatMemString = function(mem, useColor)
-	local isMB = mem > 1024
+	local isMB = mem >= 1024
 	local unit = isMB and "M" or "K"
 	local formattedMem = isMB and mem / 1024 or mem
 
@@ -41,6 +41,9 @@ SHP.GetColorFromGradientTable = function(proportion)
 	-- Convert proportion (0-1) to index (0-100)
 	local index = math_min(100, math_max(0, math_floor(proportion * 100 + 0.5)))
 	local entry = GRADIENT_TABLE[index]
+	if not entry then
+		return 1, 1, 1
+	end
 	-- Return the r, g, b values from the named fields
 	return entry.r, entry.g, entry.b
 end
@@ -60,7 +63,7 @@ end
 SHP.GetTipAnchor = function(frame)
 	local x, y = frame:GetCenter()
 	if not x or not y then
-		return "TOPLEFT", "BOTTOMLEFT"
+		return "TOPLEFT", frame, "BOTTOMLEFT"
 	end
 	
 	local screenWidth = UIParent:GetWidth()
@@ -144,17 +147,6 @@ SHP.AddColoredDoubleLineToTooltip = function(leftLabel, rightText, r, g, b)
 end
 
 --[[ 
-	Adds a colored single line of text to the tooltip.
-	@param text: The line of text to be added to the tooltip.
-	@param r: Red component of the color (0-1).
-	@param g: Green component of the color (0-1).
-	@param b: Blue component of the color (0-1).
---]]
-SHP.AddColoredSingleLineToTooltip = function(text, r, g, b)
-	SHP.GameTooltip:AddLine(text, r, g, b)
-end
-
---[[ 
 	Adds a line spacer to the tooltip. Optionally adds a dashed line if dashedSpacer is true.
 	@param dashedSpacer: Boolean value; if true, adds a dashed line. Otherwise, adds a blank line.
 --]]
@@ -178,11 +170,10 @@ SHP.UpdateUserAddonMemoryUsageTable = function()
 	-- Refresh memory usage data for all loaded addons in WoW
 	SHP.UpdateAddOnMemoryUsage() -- WoW API call to refresh memory data
 
-	-- Loop through each addon in `SHP.ADDONS_TABLE` (now an array) and update its memory usage
+	-- Loop through each addon in `SHP.ADDONS_TABLE` and update its memory usage
 	for _, addonData in ipairs(SHP.ADDONS_TABLE) do
-		-- Retrieve memory usage for each addon by its `index`
-		-- `SHP.GetAddOnMemoryUsage(addonData.index)` returns memory in KB; fallback to 0 if unavailable
-		addonData.memory = SHP.GetAddOnMemoryUsage(addonData.index) or 0
+		-- Names remain valid if the client changes addon index ordering.
+		addonData.memory = SHP.GetAddOnMemoryUsage(addonData.name) or 0
 	end
 end
 
@@ -208,18 +199,10 @@ SHP.HideTooltip = function()
 	SHP.GameTooltip:Hide()
 end
 
---[[ 
-    Updates the latency data text with formatted home and world latency values.
-    
-    This function retrieves the formatted latency for both home and world connections, 
-    combines them into a single string separated by an arrow (→), and updates the 
-    `DATA_TEXT_LATENCY.text` field with this formatted output. 
+--[[
+	Returns colorized home and world latency text separated by an arrow.
 
-    Usage:
-    Call `SHP.UpdateLatencyDataText()` whenever you need to refresh or display updated 
-    latency information in the data text. 
-
-    @return: None. This function directly updates `DATA_TEXT_LATENCY.text`.
+	@return: Formatted latency string.
 ]]
 SHP.UpdateLatencyDataText = function()
 	local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
@@ -234,18 +217,10 @@ SHP.UpdateLatencyDataText = function()
 	return string_format("%s → %s", colorizedHome, colorizedWorld)
 end
 
---[[ 
-    Adds network latency and bandwidth stats to a specified tooltip with colorized formatting.
-    
-    This function retrieves network statistics, formats the latency and bandwidth values with 
-    color gradients, and adds them to the specified tooltip. Supports IPv4 and IPv6 identification 
-    when available and color-codes the output based on thresholds in the configuration.
+--[[
+	Adds colorized latency and bandwidth statistics to the shared game tooltip.
 
-    Usage:
-    Call `SHP.AddNetworkStatsToTooltip(tooltip)` within any tooltip setup to include network stats. 
-
-    @param tooltip: The tooltip object to which the network stats will be added.
-    @return: bandwidthIn, bandwidthOut - Optionally returns incoming and outgoing bandwidth values.
+	@return: Incoming and outgoing bandwidth values.
 ]]
 SHP.AddNetworkStatsToTooltip = function()
 	-- Retrieve network stats from WoW's API or custom function
@@ -290,17 +265,10 @@ SHP.AddNetworkStatsToTooltip = function()
 	return bandwidthIn, bandwidthOut
 end
 
---[[ 
-    Retrieves the current FPS and applies a color gradient based on the FPS value, 
-    returning the formatted FPS as a colorized string.
+--[[
+	Returns the current FPS as colorized text.
 
-    This function fetches the current frames per second (FPS), determines the appropriate 
-    color gradient, and formats the FPS value as a string with color coding. 
-
-    Usage:
-    Call `SHP.GetFormattedFPS()` wherever a colorized FPS string is needed for display.
-
-    @return: A string representing the FPS value, formatted with color based on the FPS level.
+	@return: Formatted FPS string.
 ]]
 SHP.UpdateFPSDataText = function()
 	local fps = SHP.GetFramerate()

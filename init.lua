@@ -17,22 +17,14 @@ local UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
 local GetAddOnMemoryUsage = GetAddOnMemoryUsage
 local collectgarbage = collectgarbage
 local GameTooltip = GameTooltip
-local UIParent = UIParent
 local CreateFrame = CreateFrame
 local C_AddOns = C_AddOns
-local GetTime = GetTime
-local unpack = unpack
-local ipairs = ipairs
-local pairs = pairs
-local tonumber = tonumber
-local tostring = tostring
 
 -- Lua standard library localizations
 local math_floor = math.floor
 local math_max = math.max
 local math_min = math.min
 local string_format = string.format
-local string_lower = string.lower
 local string_find = string.find
 local table_insert = table.insert
 local table_sort = table.sort
@@ -46,7 +38,7 @@ local FORMAT_STRINGS = {
 	ADDON_COUNTER_SINGLE = "|cffDAB024 %d)|r",
 	ADDON_COUNTER_DOUBLE = "|cffDAB024%d)|r",
 	ADDON_USAGE_HEADER = "USAGE (|cff06ddfaabove %sK|r)",
-	ADDON_HIDDEN = "|cff06DDFA[%d] hidden addons|r (usage less than %dK)",
+	ADDON_HIDDEN = "|cff06DDFA[%d] hidden addons|r (usage at or below %dK)",
 	TOTAL_MEMORY = "→ |cff06ddfa%s|r",
 	COLOR_WRAP = "|cff%s%s|r",
 	HEX_FORMAT = "%02x%02x%02x",
@@ -58,7 +50,6 @@ SHP.CONFIG = {
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
 	UPDATE_PERIOD_LATENCY_DATA_TEXT = 15, -- Blizzard's static default is 30; refresh every 15 for more responsive displays.
 	MEM_THRESHOLD = 500, -- in KB (only will show addons that use >= this number)
-	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
 	MEM_GRADIENT_THRESHOLD_MAX = 30e3,
@@ -81,12 +72,9 @@ SHP.math = {
 
 SHP.string = {
 	format = string_format,
-	lower = string_lower,
-	find = string_find,
 }
 
 SHP.table = {
-	insert = table_insert,
 	sort = table_sort,
 }
 
@@ -97,10 +85,8 @@ SHP.UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
 SHP.GetAddOnMemoryUsage = GetAddOnMemoryUsage
 SHP.GetNumAddOns = C_AddOns.GetNumAddOns
 SHP.GetAddOnInfo = C_AddOns.GetAddOnInfo
-SHP.IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 SHP.GetNetStats = GetNetStats
 SHP.GetNetIpTypes = GetNetIpTypes
-SHP.GetTime = GetTime
 
 -- Store format strings for global access
 SHP.FORMAT_STRINGS = FORMAT_STRINGS
@@ -123,15 +109,14 @@ local function InitializeGradientTable()
 		local g = colors[idx + 2] + (colors[idx + 5] - colors[idx + 2]) * segmentPerc
 		local b = colors[idx + 3] + (colors[idx + 6] - colors[idx + 3]) * segmentPerc
 		
-		-- Pre-compute hex strings for efficiency
 		GRADIENT_TABLE[i] = {
 			r = r,
 			g = g, 
 			b = b,
-			hex = string_format(FORMAT_STRINGS.HEX_FORMAT, r * 255, g * 255, b * 255)
 		}
 	end
 end
+InitializeGradientTable()
 SHP.GRADIENT_TABLE = GRADIENT_TABLE
 
 -- Initialize `SHP.ADDONS_TABLE` as an array-style table
@@ -142,10 +127,10 @@ local function CreateAddonTable()
 	local numAddOns = SHP.GetNumAddOns()
 
 	for i = 1, numAddOns do
-		local name, title, _, loadable, reason = SHP.GetAddOnInfo(i)
+		local name, title, _, loadable, reason, security = SHP.GetAddOnInfo(i)
 
-		-- Only add addons that are loadable or load on demand
-		if loadable or reason == "DEMAND_LOADED" then
+		-- Memory usage can only be queried safely for user-installed addons.
+		if security == "INSECURE" and (loadable or reason == "DEMAND_LOADED") then
 			local colorizedTitle
 			if title then
 				colorizedTitle = string_find(title, "|cff") and title or "|cffffffff" .. title
@@ -155,7 +140,6 @@ local function CreateAddonTable()
 			
 			table_insert(SHP.ADDONS_TABLE, {
 				name = name,
-				index = i, -- Store the addon's index for easy reference later if needed
 				title = title or "Unknown Addon",
 				colorizedTitle = colorizedTitle,
 				memory = 0, -- Default memory usage, to be updated later
@@ -171,7 +155,6 @@ gFrame:SetScript("OnEvent", function(self, event)
 	if event == "PLAYER_LOGIN" then
 		-- Populate the addons table only once on login
 		CreateAddonTable()
-		InitializeGradientTable()
 		self:UnregisterEvent("PLAYER_LOGIN")
 		self:SetScript("OnEvent", nil)
 	end

@@ -12,7 +12,7 @@ local FORMAT_STRINGS = SHP.FORMAT_STRINGS
 ----------------------
 --> Modules, frames, update controllers
 ----------------------
-local FRAME_FPS = CreateFrame("frame")
+local FRAME_FPS = CreateFrame("Frame")
 
 -- Adding one to update period to ensure first and immediate update
 local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1
@@ -23,11 +23,6 @@ local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shFps", {
 	icon = SHP.CONFIG.FPS_ICON,
 })
 
-----------------------
---> shLatency Module
-----------------------
-
--- Helper function to update data text
 -- Helper function to update data text for FPS display
 local function updateDataText()
 	DATA_TEXT_FPS.text = string_format(FORMAT_STRINGS.FPS_TEXT, SHP.UpdateFPSDataText())
