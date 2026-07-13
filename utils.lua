@@ -199,18 +199,10 @@ SHP.HideTooltip = function()
 	SHP.GameTooltip:Hide()
 end
 
---[[ 
-    Updates the latency data text with formatted home and world latency values.
-    
-    This function retrieves the formatted latency for both home and world connections, 
-    combines them into a single string separated by an arrow (→), and updates the 
-    `DATA_TEXT_LATENCY.text` field with this formatted output. 
+--[[
+	Returns colorized home and world latency text separated by an arrow.
 
-    Usage:
-    Call `SHP.UpdateLatencyDataText()` whenever you need to refresh or display updated 
-    latency information in the data text. 
-
-    @return: None. This function directly updates `DATA_TEXT_LATENCY.text`.
+	@return: Formatted latency string.
 ]]
 SHP.UpdateLatencyDataText = function()
 	local _, _, latencyHome, latencyWorld = SHP.GetNetStats()
@@ -225,18 +217,10 @@ SHP.UpdateLatencyDataText = function()
 	return string_format("%s → %s", colorizedHome, colorizedWorld)
 end
 
---[[ 
-    Adds network latency and bandwidth stats to a specified tooltip with colorized formatting.
-    
-    This function retrieves network statistics, formats the latency and bandwidth values with 
-    color gradients, and adds them to the specified tooltip. Supports IPv4 and IPv6 identification 
-    when available and color-codes the output based on thresholds in the configuration.
+--[[
+	Adds colorized latency and bandwidth statistics to the shared game tooltip.
 
-    Usage:
-    Call `SHP.AddNetworkStatsToTooltip(tooltip)` within any tooltip setup to include network stats. 
-
-    @param tooltip: The tooltip object to which the network stats will be added.
-    @return: bandwidthIn, bandwidthOut - Optionally returns incoming and outgoing bandwidth values.
+	@return: Incoming and outgoing bandwidth values.
 ]]
 SHP.AddNetworkStatsToTooltip = function()
 	-- Retrieve network stats from WoW's API or custom function
@@ -281,17 +265,10 @@ SHP.AddNetworkStatsToTooltip = function()
 	return bandwidthIn, bandwidthOut
 end
 
---[[ 
-    Retrieves the current FPS and applies a color gradient based on the FPS value, 
-    returning the formatted FPS as a colorized string.
+--[[
+	Returns the current FPS as colorized text.
 
-    This function fetches the current frames per second (FPS), determines the appropriate 
-    color gradient, and formats the FPS value as a string with color coding. 
-
-    Usage:
-    Call `SHP.GetFormattedFPS()` wherever a colorized FPS string is needed for display.
-
-    @return: A string representing the FPS value, formatted with color based on the FPS level.
+	@return: Formatted FPS string.
 ]]
 SHP.UpdateFPSDataText = function()
 	local fps = SHP.GetFramerate()

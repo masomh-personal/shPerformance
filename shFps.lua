@@ -23,11 +23,6 @@ local DATA_TEXT_FPS = SHP.LibStub:NewDataObject("shFps", {
 	icon = SHP.CONFIG.FPS_ICON,
 })
 
-----------------------
---> shLatency Module
-----------------------
-
--- Helper function to update data text
 -- Helper function to update data text for FPS display
 local function updateDataText()
 	DATA_TEXT_FPS.text = string_format(FORMAT_STRINGS.FPS_TEXT, SHP.UpdateFPSDataText())

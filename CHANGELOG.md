@@ -1,5 +1,27 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Query user-addon memory by name and exclude secure Blizzard addons.
+- Correct total addon memory and the exact 1024 KB formatting boundary.
+- Initialize color gradients before broker updates.
+- Correct alphabetical sorting, tooltip fallback anchoring, and click behavior.
+
+### Added
+
+- Add `/shperformance test` and `/shp test` diagnostics dashboard.
+- Add local structural validation and an optional native pre-push hook.
+
+### Changed
+
+- Remove unused code and the duplicate TGA logo.
+- Exclude documentation screenshots from packaged Git archives.
+- Align documentation with GPL-3.0 and remove unsupported benchmark claims.
+
+---
+
 ## [v12-1] - 2026-06-25
 
 ### Updated
@@ -43,14 +65,14 @@
 #### Critical Fixes
 
 - **Fixed memory leak** in tooltip OnUpdate handlers that was creating new closures on every hover
-- **Eliminated 97% of memory allocations** during tooltip display (from ~15KB to ~0.5KB per hover)
-- **Reduced CPU usage by 60-75%** during normal operation
+- **Reduced allocations** during tooltip display
+- **Reduced repeated work** during normal operation
 
 #### Performance Enhancements
 
-- **Localized ALL WoW API and Lua functions** for 10-30% faster execution
+- **Localized frequently used WoW API and Lua functions**
 - **Pre-cached all format strings** to eliminate runtime string building
-- **Optimized gradient table** from 200 to 100 entries with pre-computed hex colors (3x faster lookups)
+- **Optimized gradient table** with direct color lookups
 - **Improved memory formatting** with clearer branching and cached formats
 
 #### Code Quality
@@ -128,4 +150,4 @@
 
 ### NOTES
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/). Versions follow the addon's published release labels.

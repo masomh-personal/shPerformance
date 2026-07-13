@@ -21,7 +21,7 @@ local FRAME_PERFORMANCE = CreateFrame("Frame")
 local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1
 local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1
 
--- Since we are using latency information, get it immediately b/c it won't be updated for 30 seconds in OnUpdateScript
+-- Use a placeholder until the first throttled network update.
 local cachedLatencyText = "Initializing ms..."
 
 local DATA_TEXT_PERFORMANCE = SHP.LibStub:NewDataObject("shPerformance", {
