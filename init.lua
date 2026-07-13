@@ -17,22 +17,14 @@ local UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
 local GetAddOnMemoryUsage = GetAddOnMemoryUsage
 local collectgarbage = collectgarbage
 local GameTooltip = GameTooltip
-local UIParent = UIParent
 local CreateFrame = CreateFrame
 local C_AddOns = C_AddOns
-local GetTime = GetTime
-local unpack = unpack
-local ipairs = ipairs
-local pairs = pairs
-local tonumber = tonumber
-local tostring = tostring
 
 -- Lua standard library localizations
 local math_floor = math.floor
 local math_max = math.max
 local math_min = math.min
 local string_format = string.format
-local string_lower = string.lower
 local string_find = string.find
 local table_insert = table.insert
 local table_sort = table.sort
@@ -58,7 +50,6 @@ SHP.CONFIG = {
 	UPDATE_PERIOD_FPS_DATA_TEXT = 1.5,
 	UPDATE_PERIOD_LATENCY_DATA_TEXT = 15, -- Blizzard's static default is 30; refresh every 15 for more responsive displays.
 	MEM_THRESHOLD = 500, -- in KB (only will show addons that use >= this number)
-	SHOW_BOTH = true,
 	FPS_GRADIENT_THRESHOLD = 75,
 	MS_GRADIENT_THRESHOLD = 300,
 	MEM_GRADIENT_THRESHOLD_MAX = 30e3,
@@ -81,12 +72,9 @@ SHP.math = {
 
 SHP.string = {
 	format = string_format,
-	lower = string_lower,
-	find = string_find,
 }
 
 SHP.table = {
-	insert = table_insert,
 	sort = table_sort,
 }
 
@@ -97,10 +85,8 @@ SHP.UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
 SHP.GetAddOnMemoryUsage = GetAddOnMemoryUsage
 SHP.GetNumAddOns = C_AddOns.GetNumAddOns
 SHP.GetAddOnInfo = C_AddOns.GetAddOnInfo
-SHP.IsAddOnLoaded = C_AddOns.IsAddOnLoaded
 SHP.GetNetStats = GetNetStats
 SHP.GetNetIpTypes = GetNetIpTypes
-SHP.GetTime = GetTime
 
 -- Store format strings for global access
 SHP.FORMAT_STRINGS = FORMAT_STRINGS
@@ -123,12 +109,10 @@ local function InitializeGradientTable()
 		local g = colors[idx + 2] + (colors[idx + 5] - colors[idx + 2]) * segmentPerc
 		local b = colors[idx + 3] + (colors[idx + 6] - colors[idx + 3]) * segmentPerc
 		
-		-- Pre-compute hex strings for efficiency
 		GRADIENT_TABLE[i] = {
 			r = r,
 			g = g, 
 			b = b,
-			hex = string_format(FORMAT_STRINGS.HEX_FORMAT, r * 255, g * 255, b * 255)
 		}
 	end
 end

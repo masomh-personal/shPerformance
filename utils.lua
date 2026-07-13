@@ -147,17 +147,6 @@ SHP.AddColoredDoubleLineToTooltip = function(leftLabel, rightText, r, g, b)
 end
 
 --[[ 
-	Adds a colored single line of text to the tooltip.
-	@param text: The line of text to be added to the tooltip.
-	@param r: Red component of the color (0-1).
-	@param g: Green component of the color (0-1).
-	@param b: Blue component of the color (0-1).
---]]
-SHP.AddColoredSingleLineToTooltip = function(text, r, g, b)
-	SHP.GameTooltip:AddLine(text, r, g, b)
-end
-
---[[ 
 	Adds a line spacer to the tooltip. Optionally adds a dashed line if dashedSpacer is true.
 	@param dashedSpacer: Boolean value; if true, adds a dashed line. Otherwise, adds a blank line.
 --]]
