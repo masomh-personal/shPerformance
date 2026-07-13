@@ -24,7 +24,7 @@ local GRADIENT_TABLE = SHP.GRADIENT_TABLE
 	@return: Formatted string with memory value in either "K" or "M" units, colored if specified.
 ]]
 SHP.FormatMemString = function(mem, useColor)
-	local isMB = mem > 1024
+	local isMB = mem >= 1024
 	local unit = isMB and "M" or "K"
 	local formattedMem = isMB and mem / 1024 or mem
 
