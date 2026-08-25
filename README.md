@@ -3,8 +3,8 @@
 <div align="center">
   <img src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance-logo.png?raw=true" alt="shPerformance Logo" width="128">
   
-  [![WoW Version](https://img.shields.io/badge/WoW-12.0.7%20Midnight-blue)](https://worldofwarcraft.com)
-  [![Version](https://img.shields.io/badge/Version-v12--2-green)](https://github.com/masomh-personal/shPerformance/releases)
+  [![WoW Version](https://img.shields.io/badge/WoW-12.1.0-blue)](https://worldofwarcraft.com)
+  [![Version](https://img.shields.io/badge/Version-v12--3-green)](https://github.com/masomh-personal/shPerformance/releases)
   [![License](https://img.shields.io/badge/License-GPL--3.0-yellow)](LICENSE)
   
   **Lightweight LibDataBroker addon for system monitoring in World of Warcraft**
@@ -53,12 +53,12 @@ Choose any combination that fits your UI:
 
 ### Requirements
 
-- **World of Warcraft** 12.0.7 (Midnight) or later
+- **World of Warcraft Retail** 12.1.0 (Interface `120100`, build `69283`) or later
 - **LibDataBroker Display Addon** (Choose one):
   - [Titan Panel](https://www.curseforge.com/wow/addons/titan-panel)
   - [Bazooka](https://www.curseforge.com/wow/addons/bazooka)
   - [ChocolateBar](https://www.curseforge.com/wow/addons/chocolatebar)
-  - ElvUI (built-in DataTexts)
+  - ElvUI 15.19 or later (built-in DataTexts; 15.25 current on 2026-08-25)
   - Or any other LDB-compatible display
 
 ### Installation Steps
@@ -115,6 +115,18 @@ SHP.CONFIG = {
 
 Run `/shperformance test` (or `/shp test`) to open an on-demand dashboard. It checks gradient boundaries, memory formatting, required APIs, LDB feeds, and safe addon-memory refreshes.
 
+### Retail 12.1 Manual Test
+
+After updating or installing:
+
+1. Log in or run `/reload`; confirm no Lua errors.
+2. Confirm all three LDB feeds render and update.
+3. Hover and click the combined feed; verify network data, memory totals, sorting, and garbage collection.
+4. Run `/shperformance test`; confirm every diagnostic passes.
+5. Repeat tooltip checks in combat and an instance; if available, also check an active PvP match.
+
+The addon does not call aura or unit-name APIs, so the 12.1 aura secrecy changes and the less restrictive `UnitName` behavior in active PvP matches require no runtime migration. The combat and PvP checks guard against unexpected secret-value, taint, or forbidden-frame errors from display addons.
+
 ## Technical Details
 
 ### Architecture
@@ -162,7 +174,7 @@ Contributions are welcome! Please feel free to submit issues or pull requests on
 
 ### Local Checks
 
-Run `sh scripts/check.sh` before committing. The checker validates TOC entries, runtime assets, WoW 12 restricted API usage, and Lua syntax when `luac` is installed.
+Run `sh scripts/check.sh` before committing. The checker validates TOC entries, runtime assets, WoW 12.1 restricted API usage, and Lua syntax when `luac` is installed.
 
 To enable the native pre-push hook without changing Git configuration:
 
@@ -173,9 +185,9 @@ chmod +x .git/hooks/pre-push
 
 The hook runs the same local checker. No GitHub Actions workflow is required.
 
-### WoW 12 Secret Values
+### WoW 12.1 Secret Values
 
-shPerformance only reads frame rate, network statistics, and user-addon memory. It does not consume APIs that return secret combat values. Any future unit health, power, aura, cooldown, combat-log, `C_Secrets`, or `C_RestrictedActions` usage requires an explicit WoW 12 safety review.
+shPerformance only reads frame rate, network statistics, and user-addon memory. It does not consume APIs that return secret combat values. Retail 12.1 makes aura data more restrictive and introduces forbidden aspects for aura frames, but this addon creates only ordinary frames and does not query auras or unit names. Any future unit health, power, aura, unit-name, cooldown, combat-log, `C_Secrets`, or `C_RestrictedActions` usage requires an explicit WoW 12.1 safety review.
 
 ## License
 
@@ -191,12 +203,12 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-**Latest Version: v12-2** (2026-07-13)
+**Latest Version: v12-3** (2026-08-25)
 
-- Hardened addon-memory queries and total accounting
-- Added local checks and an in-game diagnostics dashboard
-- Improved broker tooltip behavior and initialization safety
-- Aligned metadata and documentation with GPL-3.0
+- Updated Retail compatibility metadata to Interface `120100` for patch 12.1.0
+- Audited runtime APIs against 12.1 aura, secret-value, and frame-script changes
+- Documented ElvUI 15.19+ compatibility and current 15.25 integration
+- Expanded static and in-game testing guidance for Retail 12.1
 
 ---
 

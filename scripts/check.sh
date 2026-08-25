@@ -30,7 +30,7 @@ for asset in media/fpsicon.TGA media/msicon.TGA media/shPerformance-logo.png; do
 	fi
 done
 
-restricted_pattern='UnitHealth|UnitPower|UnitAura|C_UnitAuras|COMBAT_LOG_EVENT_UNFILTERED|C_RestrictedActions|C_Secrets'
+restricted_pattern='UnitHealth|UnitPower|UnitAura|C_UnitAuras|UnitName|UnitFullName|UnitNameUnmodified|AuraContainer|AuraButton|COMBAT_LOG_EVENT_UNFILTERED|C_RestrictedActions|C_Secrets'
 for file in init.lua utils.lua shPerformance.lua shFps.lua shLatency.lua diagnostics.lua; do
 	if grep -En "$restricted_pattern" "$file"; then
 		fail "review WoW 12 restricted or secret API usage in ${file}"
