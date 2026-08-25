@@ -1,5 +1,21 @@
 # Changelog
 
+## [v12-3] - 2026-08-25
+
+### Updated
+
+- Update Retail compatibility metadata to Interface `120100` for patch 12.1.0 (build `69283`).
+- Update the in-game diagnostics version and README requirements for v12-3.
+- Document ElvUI 15.19 as the optional 12.1 compatibility floor; verify current 15.25 LDB integration.
+
+### Compatibility
+
+- Audit every WoW API used by the addon against the 12.1 API changes; no runtime migration is required.
+- Confirm the addon does not use aura APIs, `UnitName`, restricted aura frames, or ElvUI-specific APIs.
+- Expand static checks and manual guidance for aura secrecy, unit-name secrecy, forbidden frame scripts, combat, instances, and active PvP matches.
+
+---
+
 ## [v12-2] - 2026-07-13
 
 ### Fixed

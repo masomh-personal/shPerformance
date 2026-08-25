@@ -107,7 +107,7 @@ local function createDashboard()
 
 	local title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 	title:SetPoint("TOP", 0, -18)
-	title:SetText("shPerformance diagnostics")
+	title:SetText("shPerformance v12-3 diagnostics")
 
 	local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
 	closeButton:SetPoint("TOPRIGHT", -4, -4)
