@@ -3,7 +3,7 @@
 ## Notes: Retail 12.1 LDB feed for FPS, latency, bandwidth, and addon memory usage.
 ## IconTexture: Interface\Addons\shPerformance\media\shPerformance-logo.png
 ## Author: mhDesigns (formerly Shaykh) - special thanks to: Tekkub, Stoutwrithe, and many others!
-## Version: v12-3
+## Version: v12-4
 ## Category: Data Broker
 
 lib/LibStub.lua

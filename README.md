@@ -4,7 +4,7 @@
   <img src="https://github.com/masomh-personal/shPerformance/blob/main/media/shPerformance-logo.png?raw=true" alt="shPerformance Logo" width="128">
   
   [![WoW Version](https://img.shields.io/badge/WoW-12.1.0-blue)](https://worldofwarcraft.com)
-  [![Version](https://img.shields.io/badge/Version-v12--3-green)](https://github.com/masomh-personal/shPerformance/releases)
+  [![Version](https://img.shields.io/badge/Version-v12--4-green)](https://github.com/masomh-personal/shPerformance/releases)
   [![License](https://img.shields.io/badge/License-GPL--3.0-yellow)](LICENSE)
   
   **Lightweight LibDataBroker addon for system monitoring in World of Warcraft**
@@ -205,12 +205,13 @@ This project is licensed under the GNU General Public License v3.0 - see the [LI
 
 See [CHANGELOG.md](CHANGELOG.md) for detailed version history.
 
-**Latest Version: v12-3** (2026-08-25)
+**Latest Version: v12-4** (2026-09-25)
 
-- Updated Retail compatibility metadata to Interface `120100` for patch 12.1.0
-- Audited runtime APIs against 12.1 aura, secret-value, and frame-script changes
-- Documented ElvUI 15.19+ compatibility and current 15.25 integration
-- Expanded static and in-game testing guidance for Retail 12.1
+- Tooltips no longer modify display addon frames or overwrite other tooltips
+- Alphabetical sorting ignores color and icon codes in addon titles
+- Forced garbage collection is skipped in combat
+- Shared timers replace per-frame updates (idle frames now cost nothing)
+- Declared Interface `120105` for patch 12.1.5
 
 ---
 
