@@ -1,4 +1,4 @@
-## Interface: 120100
+## Interface: 120100, 120105
 ## Title: |cff0062ffsh|rPerformance |cffdeb111(LDB)|r
 ## Notes: Retail 12.1 LDB feed for FPS, latency, bandwidth, and addon memory usage.
 ## IconTexture: Interface\Addons\shPerformance\media\shPerformance-logo.png

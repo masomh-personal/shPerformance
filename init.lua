@@ -2,37 +2,20 @@ if not LibStub then
 	error("shPerformance requires LibStub")
 end
 
-local _, ns = ...
+local addonName, ns = ...
 ns.SHP = {}
 local SHP = ns.SHP
-SHP.LibStub = LibStub:GetLibrary("LibDataBroker-1.1")
+SHP.ADDON_NAME = addonName
+SHP.LDB = LibStub:GetLibrary("LibDataBroker-1.1")
 
--- ===================================================================================
--- OPTIMIZED: Localize all WoW API and Lua functions for performance
--- ===================================================================================
-local GetFramerate = GetFramerate
-local GetNetStats = GetNetStats
-local GetNetIpTypes = GetNetIpTypes
-local UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
-local GetAddOnMemoryUsage = GetAddOnMemoryUsage
-local collectgarbage = collectgarbage
-local GameTooltip = GameTooltip
-local CreateFrame = CreateFrame
 local C_AddOns = C_AddOns
-
--- Lua standard library localizations
+local CreateFrame = CreateFrame
 local math_floor = math.floor
-local math_max = math.max
 local math_min = math.min
-local string_format = string.format
 local string_find = string.find
-local table_insert = table.insert
-local table_sort = table.sort
+local string_format = string.format
 
--- ===================================================================================
--- OPTIMIZED: Pre-cached format strings to avoid runtime string building
--- ===================================================================================
-local FORMAT_STRINGS = {
+SHP.FORMAT_STRINGS = {
 	FPS_TEXT = "%s FPS",
 	PERFORMANCE_TEXT = "%s | %s",
 	ADDON_COUNTER_SINGLE = "|cffDAB024 %d)|r",
@@ -40,8 +23,6 @@ local FORMAT_STRINGS = {
 	ADDON_USAGE_HEADER = "USAGE (|cff06ddfaabove %sK|r)",
 	ADDON_HIDDEN = "|cff06DDFA[%d] hidden addons|r (usage at or below %dK)",
 	TOTAL_MEMORY = "→ |cff06ddfa%s|r",
-	COLOR_WRAP = "|cff%s%s|r",
-	HEX_FORMAT = "%02x%02x%02x",
 }
 
 SHP.CONFIG = {
@@ -63,99 +44,76 @@ SHP.CONFIG = {
 	MS_ICON = "Interface\\AddOns\\shPerformance\\media\\msicon",
 }
 
--- Export localized functions to SHP namespace
-SHP.math = {
-	floor = math_floor,
-	max = math_max,
-	min = math_min,
-}
-
-SHP.string = {
-	format = string_format,
-}
-
-SHP.table = {
-	sort = table_sort,
-}
-
-SHP.GameTooltip = GameTooltip
-SHP.GetFramerate = GetFramerate
-SHP.collectgarbage = collectgarbage
-SHP.UpdateAddOnMemoryUsage = UpdateAddOnMemoryUsage
-SHP.GetAddOnMemoryUsage = GetAddOnMemoryUsage
-SHP.GetNumAddOns = C_AddOns.GetNumAddOns
-SHP.GetAddOnInfo = C_AddOns.GetAddOnInfo
-SHP.GetNetStats = GetNetStats
-SHP.GetNetIpTypes = GetNetIpTypes
-
--- Store format strings for global access
-SHP.FORMAT_STRINGS = FORMAT_STRINGS
-
--- ===================================================================================
--- OPTIMIZED: Pre-computed gradient table for faster color lookups
--- ===================================================================================
+-- 101 entries (1% precision); hex is cached so colorizing never formats at runtime.
 local GRADIENT_TABLE = {}
 local function InitializeGradientTable()
 	local colors = SHP.CONFIG.GRADIENT_COLOR_SEQUENCE_TABLE
 	local numSegments = #colors / 3 - 1
-	
-	for i = 0, 100 do  -- 1% precision is sufficient
+
+	for i = 0, 100 do
 		local perc = i / 100
 		local segment = math_min(numSegments - 1, math_floor(perc * numSegments))
 		local segmentPerc = (perc * numSegments) - segment
-		
+
 		local idx = segment * 3
 		local r = colors[idx + 1] + (colors[idx + 4] - colors[idx + 1]) * segmentPerc
 		local g = colors[idx + 2] + (colors[idx + 5] - colors[idx + 2]) * segmentPerc
 		local b = colors[idx + 3] + (colors[idx + 6] - colors[idx + 3]) * segmentPerc
-		
+
 		GRADIENT_TABLE[i] = {
 			r = r,
-			g = g, 
+			g = g,
 			b = b,
+			hex = string_format(
+				"%02x%02x%02x",
+				math_floor(r * 255 + 0.5),
+				math_floor(g * 255 + 0.5),
+				math_floor(b * 255 + 0.5)
+			),
 		}
 	end
 end
 InitializeGradientTable()
 SHP.GRADIENT_TABLE = GRADIENT_TABLE
 
--- Initialize `SHP.ADDONS_TABLE` as an array-style table
 SHP.ADDONS_TABLE = {}
 
--- Function to create `SHP.ADDONS_TABLE` once at player login
-local function CreateAddonTable()
-	local numAddOns = SHP.GetNumAddOns()
+-- Titles may embed color, texture, and atlas escapes that would otherwise dominate string ordering.
+local function toSortKey(title)
+	local plain = title
+		:gsub("|c%x%x%x%x%x%x%x%x", "")
+		:gsub("|cn[^:]*:", "")
+		:gsub("|r", "")
+		:gsub("|T.-|t", "")
+		:gsub("|A.-|a", "")
+	return plain:match("^%s*(.-)%s*$"):lower()
+end
 
-	for i = 1, numAddOns do
-		local name, title, _, loadable, reason, security = SHP.GetAddOnInfo(i)
+local function CreateAddonTable()
+	for i = 1, C_AddOns.GetNumAddOns() do
+		local name, title, _, loadable, reason, security = C_AddOns.GetAddOnInfo(i)
 
 		-- Memory usage can only be queried safely for user-installed addons.
 		if security == "INSECURE" and (loadable or reason == "DEMAND_LOADED") then
-			local colorizedTitle
-			if title then
-				colorizedTitle = string_find(title, "|cff") and title or "|cffffffff" .. title
-			else
-				colorizedTitle = "|cffffffffUnknown Addon"
-			end
-			
-			table_insert(SHP.ADDONS_TABLE, {
+			local displayTitle = title or "Unknown Addon"
+			local ADDONS_TABLE = SHP.ADDONS_TABLE
+			ADDONS_TABLE[#ADDONS_TABLE + 1] = {
 				name = name,
-				title = title or "Unknown Addon",
-				colorizedTitle = colorizedTitle,
-				memory = 0, -- Default memory usage, to be updated later
-			})
+				title = displayTitle,
+				colorizedTitle = string_find(displayTitle, "|cff") and displayTitle or "|cffffffff" .. displayTitle,
+				sortKey = toSortKey(displayTitle),
+				memory = 0,
+				isLoaded = false,
+			}
 		end
 	end
 end
 
--- Initialize `SHP.ADDONS_TABLE` and create addon table once player logs in
-local gFrame = CreateFrame("Frame")
-gFrame:RegisterEvent("PLAYER_LOGIN")
-gFrame:SetScript("OnEvent", function(self, event)
-	if event == "PLAYER_LOGIN" then
-		-- Populate the addons table only once on login
-		CreateAddonTable()
-		self:UnregisterEvent("PLAYER_LOGIN")
-		self:SetScript("OnEvent", nil)
-	end
+local loginFrame = CreateFrame("Frame")
+loginFrame:RegisterEvent("PLAYER_LOGIN")
+loginFrame:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	self:SetScript("OnEvent", nil)
+	CreateAddonTable()
+	SHP.StartFeeds()
 end)

@@ -1,5 +1,25 @@
 # Changelog
 
+## [Unreleased]
+
+### Fixed
+
+- Tooltips no longer replace the display addon's `OnUpdate` script on the hovered frame, and never overwrite or hide a tooltip owned by another UI element.
+- Alphabetical sorting ignores color, texture, and atlas escape codes in addon titles.
+- Clicking the combined feed skips the forced garbage collection while in combat to avoid a client stall.
+- The hidden-addon count only includes loaded addons.
+- The diagnostics dashboard reads its version from the TOC and sizes itself to the number of checks.
+
+### Changed
+
+- Replace three per-frame `OnUpdate` loops with shared `C_Timer` tickers; FPS and latency are sampled once per interval for all feeds.
+- Precompute gradient hex colors and remove unused color and tooltip helpers.
+- Localize WoW APIs directly in each file instead of re-exporting them through the addon namespace.
+- Add Interface `120105` to the TOC so the addon stays current when patch 12.1.5 ships.
+- `scripts/check.sh` falls back to `luajit` for Lua syntax checks when `luac` is unavailable.
+
+---
+
 ## [v12-3] - 2026-08-25
 
 ### Updated

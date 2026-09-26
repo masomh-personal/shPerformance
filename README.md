@@ -43,17 +43,18 @@ Choose any combination that fits your UI:
 
 ## Runtime Design
 
-- FPS updates are throttled to 1.5 seconds by default.
-- Network updates are throttled to 15 seconds by default.
-- Color gradients are computed once during addon loading.
+- Two shared `C_Timer` tickers drive all feeds: FPS every 1.5 seconds and network every 15 seconds by default. No per-frame `OnUpdate` scripts run.
+- Color gradients, including their hex codes, are computed once during addon loading.
 - Addon memory is refreshed only while the combined tooltip is open.
+- Tooltips never modify the display addon's frames and stop refreshing as soon as another element takes the tooltip.
+- Clicking to force garbage collection is skipped in combat.
 - The addon does not read combat-sensitive unit, aura, cooldown, or combat-log data.
 
 ## Installation
 
 ### Requirements
 
-- **World of Warcraft Retail** 12.1.0 (Interface `120100`, build `69283`) or later
+- **World of Warcraft Retail** 12.1.0 (Interface `120100`, verified on build `69933`) or later; 12.1.5 (`120105`) is declared in the TOC
 - **LibDataBroker Display Addon** (Choose one):
   - [Titan Panel](https://www.curseforge.com/wow/addons/titan-panel)
   - [Bazooka](https://www.curseforge.com/wow/addons/bazooka)
@@ -108,12 +109,12 @@ SHP.CONFIG = {
 
 ### Tooltip Interaction
 
-- **Click** - Force garbage collection and refresh the visible tooltip
+- **Click** - Force garbage collection (out of combat) and refresh the visible tooltip
 - **Hover** - View detailed addon memory usage and network stats
 
 ### Diagnostics
 
-Run `/shperformance test` (or `/shp test`) to open an on-demand dashboard. It checks gradient boundaries, memory formatting, required APIs, LDB feeds, and safe addon-memory refreshes.
+Run `/shperformance test` (or `/shp test`) to open an on-demand dashboard. It checks gradient boundaries and colorizing, memory formatting, required APIs, LDB feeds, addon sort keys, and safe addon-memory refreshes.
 
 ### Retail 12.1 Manual Test
 
@@ -122,8 +123,9 @@ After updating or installing:
 1. Log in or run `/reload`; confirm no Lua errors.
 2. Confirm all three LDB feeds render and update.
 3. Hover and click the combined feed; verify network data, memory totals, sorting, and garbage collection.
-4. Run `/shperformance test`; confirm every diagnostic passes.
-5. Repeat tooltip checks in combat and an instance; if available, also check an active PvP match.
+4. While hovering a feed, move onto a bag item; the item tooltip must not be overwritten by the next refresh.
+5. Run `/shperformance test`; confirm every diagnostic passes.
+6. Repeat tooltip checks in combat and an instance (clicking should report that garbage collection was skipped); if available, also check an active PvP match.
 
 The addon does not call aura or unit-name APIs, so the 12.1 aura secrecy changes and the less restrictive `UnitName` behavior in active PvP matches require no runtime migration. The combat and PvP checks guard against unexpected secret-value, taint, or forbidden-frame errors from display addons.
 
@@ -132,15 +134,15 @@ The addon does not call aura or unit-name APIs, so the 12.1 aura secrecy changes
 ### Architecture
 
 - **Modular Design** - Three independent LDB objects share optimized core utilities
-- **Throttled Updates** - Separate configurable intervals for FPS, network, and tooltips
+- **Shared Tickers** - One FPS and one network ticker feed every module; each stat is sampled once per interval
 - **Shared Utilities** - Common color, tooltip, memory, and network helpers
 - **On-Demand Diagnostics** - The test dashboard creates no background updater
 
 ### Optimizations
 
-- Frequently used WoW API and Lua functions are localized.
-- Format strings and a 101-entry gradient table are cached.
-- Tooltip and broker updates are rate-limited.
+- Frequently used WoW API and Lua functions are localized in each file.
+- Format strings and a 101-entry gradient table (with precomputed hex colors) are cached.
+- Timer-driven updates replace per-frame polling; tooltip refreshes run only while the tooltip is owned.
 
 ### File Structure
 
@@ -174,7 +176,7 @@ Contributions are welcome! Please feel free to submit issues or pull requests on
 
 ### Local Checks
 
-Run `sh scripts/check.sh` before committing. The checker validates TOC entries, runtime assets, WoW 12.1 restricted API usage, and Lua syntax when `luac` is installed.
+Run `sh scripts/check.sh` before committing. The checker validates TOC entries, runtime assets, WoW 12.1 restricted API usage, and Lua syntax when `luac` or `luajit` is installed.
 
 To enable the native pre-push hook without changing Git configuration:
 

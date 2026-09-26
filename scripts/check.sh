@@ -38,13 +38,19 @@ for file in init.lua utils.lua shPerformance.lua shFps.lua shLatency.lua diagnos
 done
 
 if command -v luac >/dev/null 2>&1; then
+	syntax_check() { luac -p "$1"; }
+elif command -v luajit >/dev/null 2>&1; then
+	syntax_check() { luajit -b "$1" /dev/null; }
+fi
+
+if command -v syntax_check >/dev/null 2>&1; then
 	for file in init.lua utils.lua shPerformance.lua shFps.lua shLatency.lua diagnostics.lua lib/*.lua; do
-		if ! luac -p "$file"; then
+		if ! syntax_check "$file"; then
 			fail "Lua syntax check failed: ${file}"
 		fi
 	done
 else
-	printf '%s\n' 'SKIP: luac is unavailable; install a Lua 5.1 compiler for syntax checks.'
+	printf '%s\n' 'SKIP: luac and luajit are unavailable; install a Lua 5.1 compiler for syntax checks.'
 fi
 
 if [ "$failures" -ne 0 ]; then

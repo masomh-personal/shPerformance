@@ -1,94 +1,71 @@
 local _, ns = ...
 local SHP = ns.SHP
 
--- ===================================================================================
--- OPTIMIZED: Localize frequently used functions
--- ===================================================================================
-local CreateFrame = CreateFrame
+local GameTooltip = GameTooltip
+local InCombatLockdown = InCombatLockdown
+local collectgarbage = collectgarbage
 local ipairs = ipairs
-local string_format = SHP.string.format
 local print = print
+local string_format = string.format
+local table_sort = table.sort
 
-local GameTooltip = SHP.GameTooltip
+local CONFIG = SHP.CONFIG
 local FORMAT_STRINGS = SHP.FORMAT_STRINGS
+local ADDONS_TABLE = SHP.ADDONS_TABLE
+local CHAT_PREFIX = "|cff0062ffsh|r|cff0DEB11Performance|r"
+local MEM_GRADIENT_MIN = 1024 -- 1 MB in KB; memory at or below this is fully green
 
-----------------------
---> Module Frames and Update Controllers
-----------------------
-local FRAME_PERFORMANCE = CreateFrame("Frame")
-
--- Adding one to update period to ensure first and immediate update
-local elapsedFpsController = SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT + 1
-local elapsedLatencyController = SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT + 1
-
--- Use a placeholder until the first throttled network update.
 local cachedLatencyText = "Initializing ms..."
 
-local DATA_TEXT_PERFORMANCE = SHP.LibStub:NewDataObject("shPerformance", {
+local DATA_TEXT_PERFORMANCE = SHP.LDB:NewDataObject("shPerformance", {
 	type = "data source",
 	text = "Initializing...",
-	icon = SHP.CONFIG.FPS_ICON,
+	icon = CONFIG.FPS_ICON,
 })
 
-----------------------
---> Helper Functions
-----------------------
--- Helper function to update data text for FPS display
-local function updateDataText()
-	local fpsText = SHP.UpdateFPSDataText()
+SHP.OnLatencyUpdate(function(latencyText)
+	cachedLatencyText = latencyText
+end)
+
+SHP.OnFpsUpdate(function(fpsText)
 	DATA_TEXT_PERFORMANCE.text = string_format(FORMAT_STRINGS.PERFORMANCE_TEXT, fpsText, cachedLatencyText)
+end)
+
+local function byMemoryDescending(a, b)
+	return a.memory > b.memory
 end
 
--- Sorts the addons table based on memory usage or alphabetically if configured.
-local function sortAddonMemoryTable()
-	if not SHP.CONFIG.WANT_ALPHA_SORTING then
-		SHP.table.sort(SHP.ADDONS_TABLE, function(a, b)
-			return a.memory > b.memory
-		end)
-	else
-		SHP.table.sort(SHP.ADDONS_TABLE, function(a, b)
-			return a.title:lower() < b.title:lower()
-		end)
-	end
+local function byTitle(a, b)
+	return a.sortKey < b.sortKey
 end
 
---[[
-    Adds formatted addon memory usage details to the tooltip.
-]]
 local function addMemoryUsageDetailsToTooltip()
-	local counter, hiddenAddonMemoryUsage, totalAddonMemoryUsage = 0, 0, 0
+	local counter, hiddenCount, hiddenAddonMemoryUsage, totalAddonMemoryUsage = 0, 0, 0, 0
+	local memGradientRange = CONFIG.MEM_GRADIENT_THRESHOLD_MAX - MEM_GRADIENT_MIN
 
-	for _, addon in ipairs(SHP.ADDONS_TABLE) do
+	for _, addon in ipairs(ADDONS_TABLE) do
 		local addonMemUsage = addon.memory
 		totalAddonMemoryUsage = totalAddonMemoryUsage + addonMemUsage
 
-		-- Check if addon exceeds memory threshold or is 'shPerformance'
-		if addonMemUsage > SHP.CONFIG.MEM_THRESHOLD then
+		if addonMemUsage > CONFIG.MEM_THRESHOLD then
 			counter = counter + 1
 
-			-- WoW reports addon memory in KB; color the gradient from 1 MB to the configured max.
-			local minThreshold = 1e3 -- 1 MB in KB
-			local maxThreshold = SHP.CONFIG.MEM_GRADIENT_THRESHOLD_MAX -- 30 MB in KB by default
-
-			-- Calculate proportion for gradient color based on memory usage
-			local proportion = (addonMemUsage - minThreshold) / (maxThreshold - minThreshold)
-			local r, g, b = SHP.GetColorFromGradientTable(proportion)
-
-			-- Format memory usage string with color
-			local memStr = SHP.ColorizeText(r, g, b, SHP.FormatMemString(addonMemUsage))
-
-			-- Format and display addon counter with color
-			local counterText = counter < 10 and string_format(FORMAT_STRINGS.ADDON_COUNTER_SINGLE, counter)
-				or string_format(FORMAT_STRINGS.ADDON_COUNTER_DOUBLE, counter)
-			GameTooltip:AddDoubleLine(string_format("%s %s", counterText, addon.colorizedTitle), memStr)
-		else
-			-- Accumulate memory usage for addons below threshold
+			local memStr = SHP.ColorizeByProportion(
+				(addonMemUsage - MEM_GRADIENT_MIN) / memGradientRange,
+				SHP.FormatMemString(addonMemUsage)
+			)
+			local counterFormat = counter < 10 and FORMAT_STRINGS.ADDON_COUNTER_SINGLE
+				or FORMAT_STRINGS.ADDON_COUNTER_DOUBLE
+			GameTooltip:AddDoubleLine(
+				string_format("%s %s", string_format(counterFormat, counter), addon.colorizedTitle),
+				memStr
+			)
+		elseif addon.isLoaded then
+			hiddenCount = hiddenCount + 1
 			hiddenAddonMemoryUsage = hiddenAddonMemoryUsage + addonMemUsage
 		end
 	end
 
-	-- Display total user addon memory usage
-	--SHP.GameTooltip:AddDoubleLine(" ", "|cffffffff————|r")
 	SHP.AddLineSeparatorToTooltip(true)
 	GameTooltip:AddDoubleLine(
 		"|cffC3771ATOTAL ADDON|r memory usage",
@@ -97,22 +74,13 @@ local function addMemoryUsageDetailsToTooltip()
 
 	if hiddenAddonMemoryUsage > 0 then
 		SHP.AddLineSeparatorToTooltip()
-		GameTooltip:AddDoubleLine(
-			string_format(
-				FORMAT_STRINGS.ADDON_HIDDEN,
-				#SHP.ADDONS_TABLE - counter,
-				SHP.CONFIG.MEM_THRESHOLD
-			),
-			" "
-		)
+		GameTooltip:AddDoubleLine(string_format(FORMAT_STRINGS.ADDON_HIDDEN, hiddenCount, CONFIG.MEM_THRESHOLD), " ")
 	end
 
-	-- Display hint for forced garbage collection
-	GameTooltip:AddLine("**Click to force |cffc3771agarbage|r collection and to |cff06ddfaupdate|r tooltip")
+	GameTooltip:AddLine("**Click to force |cffc3771agarbage|r collection (out of combat) and to |cff06ddfaupdate|r tooltip")
 	GameTooltip:Show()
 end
 
--- Helper function to update tooltip content
 local function updateTooltipContent()
 	GameTooltip:ClearLines()
 	GameTooltip:AddLine("|cff0062ffsh|r|cff0DEB11Performance|r")
@@ -120,60 +88,37 @@ local function updateTooltipContent()
 	SHP.AddLineSeparatorToTooltip()
 	SHP.AddNetworkStatsToTooltip()
 
-	-- Add column headers and a separator line
 	SHP.AddLineSeparatorToTooltip()
-	GameTooltip:AddDoubleLine("ADDON", string_format(FORMAT_STRINGS.ADDON_USAGE_HEADER, SHP.CONFIG.MEM_THRESHOLD))
+	GameTooltip:AddDoubleLine("ADDON", string_format(FORMAT_STRINGS.ADDON_USAGE_HEADER, CONFIG.MEM_THRESHOLD))
 	SHP.AddLineSeparatorToTooltip(true)
 
-	-- Update memory usage for all addons in `SHP.ADDONS_TABLE` using the SHP method
 	SHP.UpdateUserAddonMemoryUsageTable()
-
-	-- Sort `SHP.ADDONS_TABLE` directly based on config
-	sortAddonMemoryTable()
-
-	-- Display memory usage for each addon from `SHP.ADDONS_TABLE`
+	table_sort(ADDONS_TABLE, CONFIG.WANT_ALPHA_SORTING and byTitle or byMemoryDescending)
 	addMemoryUsageDetailsToTooltip()
 end
 
-----------------------
---> Frame Scripts
-----------------------
--- Update FPS data text in real time
-FRAME_PERFORMANCE:SetScript("OnUpdate", function(_, t)
-	elapsedFpsController = elapsedFpsController + t
-	elapsedLatencyController = elapsedLatencyController + t
-
-	-- Update latency text on the configured slower interval due to Blizzard's own network stat cadence.
-	if elapsedLatencyController >= SHP.CONFIG.UPDATE_PERIOD_LATENCY_DATA_TEXT then
-		elapsedLatencyController = 0
-		cachedLatencyText = SHP.UpdateLatencyDataText()
-	end
-
-	-- Update FPS text based on config and independent of latency updates
-	if elapsedFpsController >= SHP.CONFIG.UPDATE_PERIOD_FPS_DATA_TEXT then
-		elapsedFpsController = 0
-		updateDataText()
-	end
-end)
-
 SHP.AttachTooltipHandlers(DATA_TEXT_PERFORMANCE, updateTooltipContent)
 
--- OnClick handler for garbage collection
-local function OnClickFPS()
-	local preCollect = SHP.collectgarbage("count")
-	SHP.collectgarbage("collect")
-	local deltaMemCollected = preCollect - SHP.collectgarbage("count")
+DATA_TEXT_PERFORMANCE.OnClick = function(frame)
+	-- A full collection stalls the client until it finishes; never do that mid-fight.
+	if InCombatLockdown() then
+		print(CHAT_PREFIX .. " - Garbage collection skipped while in combat.")
+		return
+	end
 
-	-- Display the amount of memory collected
+	local preCollect = collectgarbage("count")
+	collectgarbage("collect")
+	local deltaMemCollected = preCollect - collectgarbage("count")
+
 	print(
 		string_format(
-			"|cff0062ffsh|r|cff0DEB11Performance|r - Garbage Collected: |cff06ddfa%s|r",
+			"%s - Garbage Collected: |cff06ddfa%s|r",
+			CHAT_PREFIX,
 			SHP.FormatMemString(deltaMemCollected, true)
 		)
 	)
 
-	if GameTooltip:IsShown() then
+	if GameTooltip:IsOwned(frame) then
 		updateTooltipContent()
 	end
 end
-DATA_TEXT_PERFORMANCE.OnClick = OnClickFPS

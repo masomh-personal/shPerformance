@@ -1,6 +1,7 @@
-local _, ns = ...
+local addonName, ns = ...
 local SHP = ns.SHP
 
+local C_AddOns = C_AddOns
 local CreateFrame = CreateFrame
 local ipairs = ipairs
 local pcall = pcall
@@ -26,6 +27,14 @@ local function runDiagnostics()
 			end,
 		},
 		{
+			name = "Gradient colorizer",
+			run = function()
+				local low = SHP.ColorizeByProportion(0, "x")
+				local clamped = SHP.ColorizeByProportion(5, "x")
+				return low:match("^|cff%x%x%x%x%x%xx|r$") ~= nil and clamped == SHP.ColorizeByProportion(1, "x")
+			end,
+		},
+		{
 			name = "Memory formatting",
 			run = function()
 				return SHP.FormatMemString(512) == "512.00K" and SHP.FormatMemString(1024) == "1.00M"
@@ -34,25 +43,43 @@ local function runDiagnostics()
 		{
 			name = "Required WoW APIs",
 			run = function()
-				return type(SHP.GetFramerate) == "function"
-					and type(SHP.GetNetStats) == "function"
-					and type(SHP.UpdateAddOnMemoryUsage) == "function"
-					and type(SHP.GetAddOnMemoryUsage) == "function"
+				return type(GetFramerate) == "function"
+					and type(GetNetStats) == "function"
+					and type(UpdateAddOnMemoryUsage) == "function"
+					and type(GetAddOnMemoryUsage) == "function"
+					and type(C_Timer.NewTicker) == "function"
+					and type(GameTooltip.IsOwned) == "function"
 			end,
 		},
 		{
 			name = "LibDataBroker feeds",
 			run = function()
-				return SHP.LibStub:GetDataObjectByName("shPerformance") ~= nil
-					and SHP.LibStub:GetDataObjectByName("shFps") ~= nil
-					and SHP.LibStub:GetDataObjectByName("shLatency") ~= nil
+				return SHP.LDB:GetDataObjectByName("shPerformance") ~= nil
+					and SHP.LDB:GetDataObjectByName("shFps") ~= nil
+					and SHP.LDB:GetDataObjectByName("shLatency") ~= nil
 			end,
 		},
 		{
 			name = "Safe addon memory entries",
 			run = function()
 				for _, addon in ipairs(SHP.ADDONS_TABLE) do
-					if type(addon.name) ~= "string" or addon.index ~= nil or type(addon.memory) ~= "number" then
+					if
+						type(addon.name) ~= "string"
+						or type(addon.sortKey) ~= "string"
+						or addon.index ~= nil
+						or type(addon.memory) ~= "number"
+					then
+						return false
+					end
+				end
+				return true
+			end,
+		},
+		{
+			name = "Plain alphabetical sort keys",
+			run = function()
+				for _, addon in ipairs(SHP.ADDONS_TABLE) do
+					if addon.sortKey:find("|", 1, true) or addon.sortKey ~= addon.sortKey:lower() then
 						return false
 					end
 				end
@@ -85,12 +112,25 @@ local function runDiagnostics()
 	return results
 end
 
+local ROW_TOP, ROW_HEIGHT, FRAME_CHROME_HEIGHT = -45, 27, 88
+
 local dashboard
 local rows = {}
 
+local function getRow(index)
+	local row = rows[index]
+	if not row then
+		row = dashboard:CreateFontString(nil, "OVERLAY", "GameFontNormal")
+		row:SetPoint("TOPLEFT", 28, ROW_TOP - ((index - 1) * ROW_HEIGHT))
+		row:SetJustifyH("LEFT")
+		rows[index] = row
+	end
+	return row
+end
+
 local function createDashboard()
 	local frame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-	frame:SetSize(380, 250)
+	frame:SetWidth(380)
 	frame:SetPoint("CENTER")
 	frame:SetFrameStrata("DIALOG")
 	frame:SetMovable(true)
@@ -107,17 +147,11 @@ local function createDashboard()
 
 	local title = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightLarge")
 	title:SetPoint("TOP", 0, -18)
-	title:SetText("shPerformance v12-3 diagnostics")
+	local version = C_AddOns.GetAddOnMetadata(addonName, "Version")
+	title:SetText(string_format("shPerformance %s diagnostics", version or ""))
 
 	local closeButton = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
 	closeButton:SetPoint("TOPRIGHT", -4, -4)
-
-	for index = 1, 6 do
-		local row = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-		row:SetPoint("TOPLEFT", 28, -45 - ((index - 1) * 27))
-		row:SetJustifyH("LEFT")
-		rows[index] = row
-	end
 
 	local hint = frame:CreateFontString(nil, "OVERLAY", "GameFontDisableSmall")
 	hint:SetPoint("BOTTOM", 0, 18)
@@ -133,8 +167,9 @@ local function showDashboard()
 	for index, result in ipairs(results) do
 		local status = result.passed and "PASS" or "FAIL"
 		local color = result.passed and "|cff00ff00" or "|cffff4040"
-		rows[index]:SetText(string_format("%s%s|r  %s", color, status, result.name))
+		getRow(index):SetText(string_format("%s%s|r  %s", color, status, result.name))
 	end
+	dashboard:SetHeight(FRAME_CHROME_HEIGHT + #results * ROW_HEIGHT)
 
 	dashboard:Show()
 end
